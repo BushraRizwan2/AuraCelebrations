@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  --color-plum-950: #140514;
+  --color-plum-900: #220a22;
+  --color-plum-800: #351035;
+  --color-purple-royal: #5e115e;
+  --color-purple-light: #8d2e8d;
+  
+  --color-gold-light: #f6e6c2;
+  --color-gold-accent: #d4af37;
+  --color-gold-dark: #aa8410;
+  
+  --color-champagne-light: #fdfaf2;
+  --color-champagne-medium: #f2e9d3;
+  --color-champagne-dark: #dccea8;
+}
+
+/* Custom fine-grained styling and animations */
+body {
+  background-color: var(--color-plum-950);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Smooth custom scrollbar for luxury vibe */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-plum-950);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-purple-royal);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold-accent);
+}
+
+.cormorant-heading {
+  font-family: var(--font-serif);
+}
+
+/* Elegant radial glow backgrounds */
+.bg-ambient-layer {
+  background: radial-gradient(circle at 50% 50%, var(--color-plum-900) 0%, var(--color-plum-950) 100%);
+}
+
+.gold-border-gradient {
+  border-image: linear-gradient(to right, var(--color-gold-dark), var(--color-gold-light), var(--color-gold-dark)) 1;
+}
+

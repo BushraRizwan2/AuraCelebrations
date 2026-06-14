@@ -1,0 +1,8 @@
+{
+  "name": "Aura Celebrations",
+  "description": "A premium UI/UX web design concept and interactive showcase for Aura Celebrations, a high-end luxury event styling and seasonal decor brand styled with regal plum, royal purple, gold, and champagne tones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
