@@ -56,7 +56,7 @@ export const TESTIMONIALS: Testimonial[] = [
     content: '“Aura Celebrations transformed our grand hall into a dark, candlelit fairytale. The pairing of deepest plum run-set velvet with brilliant gold-dipped branches took my breath away. It was pure sensory poetry.”',
     rating: 5,
     date: 'December 2025',
-    location: 'DHA Phase 6, Lahore'
+    location: 'DHA Phase 6, Karachi'
   },
   {
     id: 'test-2',
@@ -74,7 +74,7 @@ export const TESTIMONIALS: Testimonial[] = [
     content: '“They don’t just decorate; they choreograph atmospheres. The overlapping geometric gold arches and corporate green-white cascades established an editorial canvas seen only on the glossy pages of high-end design catalogs.”',
     rating: 5,
     date: 'August 2025',
-    location: 'DHA Phase 2, Islamabad'
+    location: 'DHA Phase 2, Karachi'
   }
 ];
 
