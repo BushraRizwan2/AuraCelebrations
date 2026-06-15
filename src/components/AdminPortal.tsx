@@ -129,11 +129,23 @@ interface AdminPortalProps {
 const sanitizeStorageJson = (raw: string | null) => {
   if (!raw) return null;
   try {
-    const sanitized = raw.replace(/\/src\/assets\/images\//g, '/assets/images/');
+    const sanitized = raw.replace(/(?:\/src)?\/assets\/images\//g, '/assets/images/');
     return JSON.parse(sanitized);
   } catch (e) {
     return null;
   }
+};
+
+const resolveImgUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  let resolved = url;
+  if (resolved.includes('src/assets/images/')) {
+    resolved = resolved.replace(/.*src\/assets\/images\//, '/assets/images/');
+  }
+  if (resolved.startsWith('assets/images/')) {
+    resolved = '/' + resolved;
+  }
+  return resolved;
 };
 
 export default function AdminPortal({ onClose }: AdminPortalProps) {
@@ -2402,7 +2414,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                           ) : (
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
-                                <img src={srv.image} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={srv.title} />
+                                <img src={resolveImgUrl(srv.image)} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={srv.title} />
                                 <div>
                                   <h5 className="font-serif text-sm text-gold-accent font-semibold">{srv.title}</h5>
                                   <p className="text-[11px] text-champagne-light/40 font-mono">Starts at ₨ {srv.priceStart.toLocaleString()}</p>
@@ -2527,7 +2539,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                           ) : (
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
-                                <img src={high.image} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={high.title} />
+                                <img src={resolveImgUrl(high.image)} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={high.title} />
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <h5 className="font-serif text-sm text-gold-accent font-semibold">{high.title}</h5>

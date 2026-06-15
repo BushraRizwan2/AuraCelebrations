@@ -107,11 +107,23 @@ const HIGHLIGHTS = [
 const sanitizeStorageJson = (raw: string | null) => {
   if (!raw) return null;
   try {
-    const sanitized = raw.replace(/\/src\/assets\/images\//g, '/assets/images/');
+    const sanitized = raw.replace(/(?:\/src)?\/assets\/images\//g, '/assets/images/');
     return JSON.parse(sanitized);
   } catch (e) {
     return null;
   }
+};
+
+const resolveImgUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  let resolved = url;
+  if (resolved.includes('src/assets/images/')) {
+    resolved = resolved.replace(/.*src\/assets\/images\//, '/assets/images/');
+  }
+  if (resolved.startsWith('assets/images/')) {
+    resolved = '/' + resolved;
+  }
+  return resolved;
 };
 
 export default function App() {
@@ -496,7 +508,7 @@ export default function App() {
             {/* Elegant Logo Image Frame */}
             <div id="brand-logo-crest" className="relative group shrink-0">
               <img 
-                src="/assets/images/aura_logo_1781397175518.jpg" 
+                src={resolveImgUrl("/assets/images/aura_logo_1781397175518.jpg")} 
                 alt="Aura Celebrations" 
                 className="w-10 h-10 rounded-full border border-gold-accent object-cover bg-plum-900/40 group-hover:scale-105 transition-transform duration-300"
                 referrerPolicy="no-referrer"
@@ -695,7 +707,7 @@ export default function App() {
                 <div className="absolute top-0 left-0 right-6 bottom-6 overflow-hidden rounded border border-gold-accent shadow-2xl z-10 group">
                   <img 
                     id="hero-main-img"
-                    src={webConfig.hero.image || '/assets/images/celestique_hero_1781396253917.jpg'}
+                    src={resolveImgUrl(webConfig.hero.image || '/assets/images/celestique_hero_1781396253917.jpg')}
                     alt="High-end curated wedding reception tablescape design by Aura Celebrations"
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                     referrerPolicy="no-referrer"
@@ -767,7 +779,7 @@ export default function App() {
                   {/* Hover zoom picture */}
                   <div className="h-64 overflow-hidden relative">
                     <img 
-                      src={srv.image} 
+                      src={resolveImgUrl(srv.image)} 
                       alt={srv.title} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       referrerPolicy="no-referrer"
@@ -1097,7 +1109,7 @@ export default function App() {
                   {/* Photo container */}
                   <div className="aspect-[4/3] overflow-hidden relative">
                     <img 
-                      src={highlight.image} 
+                      src={resolveImgUrl(highlight.image)} 
                       alt={highlight.title} 
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                       referrerPolicy="no-referrer"
@@ -1675,7 +1687,7 @@ export default function App() {
             {section.image && (
               <div className="lg:col-span-6 relative aspect-[16/10] overflow-hidden rounded border border-gold-accent/40 shadow-2xl group">
                 <img 
-                  src={section.image} 
+                  src={resolveImgUrl(section.image)} 
                   alt={section.title} 
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                   referrerPolicy="no-referrer"
@@ -1696,7 +1708,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full border border-gold-accent object-cover bg-plum-900/45 shrink-0 overflow-hidden">
                 <img 
-                  src="/assets/images/aura_logo_1781397175518.jpg" 
+                  src={resolveImgUrl("/assets/images/aura_logo_1781397175518.jpg")} 
                   alt="Aura Celebrations" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -1809,7 +1821,7 @@ export default function App() {
               <div className="w-full md:w-1/2 relative bg-plum-950 flex flex-col justify-between shrink-0">
                 <div className="aspect-[4/3] md:h-full relative overflow-hidden">
                   <img
-                    src={selectedHighlight.image}
+                    src={resolveImgUrl(selectedHighlight.image)}
                     alt={selectedHighlight.title}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
