@@ -126,6 +126,16 @@ interface AdminPortalProps {
   onClose: () => void;
 }
 
+const sanitizeStorageJson = (raw: string | null) => {
+  if (!raw) return null;
+  try {
+    const sanitized = raw.replace(/\/src\/assets\/images\//g, '/assets/images/');
+    return JSON.parse(sanitized);
+  } catch (e) {
+    return null;
+  }
+};
+
 export default function AdminPortal({ onClose }: AdminPortalProps) {
   // Authentication & Access state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -201,7 +211,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
   const [webConfig, setWebConfig] = useState(() => {
     const raw = localStorage.getItem('aura_web_config');
-    if (raw) return JSON.parse(raw);
+    const parsed = sanitizeStorageJson(raw);
+    if (parsed) return parsed;
     return {
       colors: {
         background_950: '#140514',
@@ -226,7 +237,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Aura Celebrations',
         subtitle: 'CHOREOGRAPHING ATMOSPHERIC MASTERPIECES',
         description: 'We craft hyper-exclusive, premium sensory landscapes for elite celebrations in Karachi, Pakistan. Balancing architectural density, pure velvet textiles, and raw flora sculpting.',
-        image: '/src/assets/images/celestique_reception_1781396299184.jpg'
+        image: '/assets/images/celestique_reception_1781396299184.jpg'
       },
       customSections: []
     };
@@ -234,7 +245,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
   const [dynamicServices, setDynamicServices] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_services');
-    if (raw) return JSON.parse(raw);
+    const parsed = sanitizeStorageJson(raw);
+    if (parsed) return parsed;
     const defaults = [
       {
         id: 'tablescape',
@@ -249,7 +261,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           'Fine satin or velvet menu ribbon styling',
           'Post-event white-glove strike and retrieval'
         ],
-        image: '/src/assets/images/celestique_tablescape_1781396278721.jpg'
+        image: '/assets/images/celestique_tablescape_1781396278721.jpg'
       },
       {
         id: 'floral',
@@ -264,7 +276,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           'Fragrance-profile design custom to the venue',
           'Sustainably sourced, water-retaining mechanics'
         ],
-        image: '/src/assets/images/celestique_floral_1781396321270.jpg'
+        image: '/assets/images/celestique_floral_1781396321270.jpg'
       },
       {
         id: 'reception',
@@ -279,7 +291,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           'Dynamic low-lying fog and warm wash-lights',
           'Professional certified atmospheric technicians'
         ],
-        image: '/src/assets/images/celestique_reception_1781396299184.jpg'
+        image: '/assets/images/celestique_reception_1781396299184.jpg'
       }
     ];
     return defaults;
@@ -287,7 +299,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
-    if (raw) return JSON.parse(raw);
+    const parsed = sanitizeStorageJson(raw);
+    if (parsed) return parsed;
     const defaults = [
       {
         id: 'highlight-birthday-decor',
@@ -295,7 +308,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Just Birthday Decor Package',
         subtitle: 'Ambient Balloon Cloude & Golden Frames',
         description: 'A charming, high-end intimate setup featuring pastel-purple and elegant dusty-rose organic balloon arches, gold circular metal frames, customized name signs, and warm fairy lights.',
-        image: '/src/assets/images/aura_birthday_decor_1781397692017.jpg',
+        image: '/assets/images/aura_birthday_decor_1781397692017.jpg',
         features: ['Organic Silk Balloon Arches', 'Gold Plate Cake Plinth', 'Romantic Candle & Fairy Lights'],
         price: 10000
       },
@@ -305,7 +318,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Birthday Decor & Dinner Package',
         subtitle: 'Premium Curation with 5 Main Dishes',
         description: 'An elite dual-experience offering premium stage backdrop styling paired with a magnificent seated buffet hosting 5 signature gourmet main courses served in warm brass chafing dishes under floating crystal chandeliers.',
-        image: '/src/assets/images/aura_birthday_dinner_1781399061307.jpg',
+        image: '/assets/images/aura_birthday_dinner_1781399061307.jpg',
         features: ['5 Gourmet Main Dishes Buffet', 'Premium Stage Backdrop Decor', 'Fine Cutlery & Charger Plates'],
         price: 400000
       },
@@ -315,7 +328,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Birthday Decor + DJ + Dinner Package',
         subtitle: 'The Ultimate Milestone Extravaganza',
         description: 'A custom, high-octane celebration package integrating complete theme decor, professional live sound DJ booth setups, warm mood wash-lights, and an expansive dinner buffet featuring 5 main courses.',
-        image: '/src/assets/images/aura_birthday_dj_1781399084641.jpg',
+        image: '/assets/images/aura_birthday_dj_1781399084641.jpg',
         features: ['Pro DJ Sound System & Laser Uplighting', '5-Course Luxury Feast Buffet', 'Immersive Atmospheric Backdrop Display'],
         price: 450000
       }
@@ -2696,7 +2709,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10"
+              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10 max-h-[90vh] overflow-y-auto"
             >
               <div className="bg-plum-950 text-white p-5 flex justify-between items-center border-b border-gold-dark/20">
                 <h4 className="font-serif text-lg text-gold-accent tracking-wider">File Brand New Client Profile</h4>
@@ -2813,7 +2826,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10"
+              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10 max-h-[90vh] overflow-y-auto"
             >
               <div className="bg-plum-950 text-white p-5 flex justify-between items-center border-b border-gold-dark/20">
                 <h4 className="font-serif text-lg text-gold-accent tracking-wider">Register Partner Supplier</h4>
@@ -2933,7 +2946,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10"
+              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10 max-h-[90vh] overflow-y-auto"
             >
               <div className="bg-plum-950 text-white p-5 flex justify-between items-center border-b border-gold-dark/20">
                 <h4 className="font-serif text-lg text-gold-accent tracking-wider">Log Review & Post-Event Feedback</h4>
@@ -3039,7 +3052,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10"
+              className="bg-white text-plum-950 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10 max-h-[90vh] overflow-y-auto"
             >
               <div className="bg-plum-950 text-white p-5 flex justify-between items-center border-b border-gold-dark/20">
                 <h4 className="font-serif text-lg text-gold-accent tracking-wider">Log Transaction (Expense/Revenue)</h4>
