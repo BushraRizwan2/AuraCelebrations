@@ -129,7 +129,11 @@ interface AdminPortalProps {
 const sanitizeStorageJson = (raw: string | null) => {
   if (!raw) return null;
   try {
-    const sanitized = raw.replace(/(?:\/src)?\/assets\/images\//g, '/assets/images/');
+    let sanitized = raw;
+    // Replace "/src/assets/images/" or "src/assets/images/" with "/assets/images/"
+    sanitized = sanitized.replace(/\/?src\/assets\/images\//g, '/assets/images/');
+    // Ensure all "/assets/images" or "assets/images" start with "/assets/images/"
+    sanitized = sanitized.replace(/\/?assets\/images\//g, '/assets/images/');
     return JSON.parse(sanitized);
   } catch (e) {
     return null;
@@ -144,6 +148,9 @@ const resolveImgUrl = (url: string | undefined): string => {
   }
   if (resolved.startsWith('assets/images/')) {
     resolved = '/' + resolved;
+  }
+  if (resolved.startsWith('//')) {
+    resolved = resolved.replace(/^\/+/, '/');
   }
   return resolved;
 };
@@ -350,7 +357,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
   const [dynamicTestimonials, setDynamicTestimonials] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_testimonials');
-    if (raw) return JSON.parse(raw);
+    const parsed = sanitizeStorageJson(raw);
+    if (parsed) return parsed;
     const defaults = [
       {
         id: 'test-1',
@@ -411,16 +419,20 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       if (rawNotifs) setNotifications(JSON.parse(rawNotifs));
 
       const rawConfig = localStorage.getItem('aura_web_config');
-      if (rawConfig) setWebConfig(JSON.parse(rawConfig));
+      const parsedConfig = sanitizeStorageJson(rawConfig);
+      if (parsedConfig) setWebConfig(parsedConfig);
 
       const rawServices = localStorage.getItem('aura_dynamic_services');
-      if (rawServices) setDynamicServices(JSON.parse(rawServices));
+      const parsedServices = sanitizeStorageJson(rawServices);
+      if (parsedServices) setDynamicServices(parsedServices);
 
       const rawHighlights = localStorage.getItem('aura_dynamic_highlights');
-      if (rawHighlights) setDynamicHighlights(JSON.parse(rawHighlights));
+      const parsedHighlights = sanitizeStorageJson(rawHighlights);
+      if (parsedHighlights) setDynamicHighlights(parsedHighlights);
 
       const rawTestimonials = localStorage.getItem('aura_dynamic_testimonials');
-      if (rawTestimonials) setDynamicTestimonials(JSON.parse(rawTestimonials));
+      const parsedTestimonials = sanitizeStorageJson(rawTestimonials);
+      if (parsedTestimonials) setDynamicTestimonials(parsedTestimonials);
     };
 
     window.addEventListener('aura_notification_added', handleReload);

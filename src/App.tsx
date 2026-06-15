@@ -107,7 +107,11 @@ const HIGHLIGHTS = [
 const sanitizeStorageJson = (raw: string | null) => {
   if (!raw) return null;
   try {
-    const sanitized = raw.replace(/(?:\/src)?\/assets\/images\//g, '/assets/images/');
+    let sanitized = raw;
+    // Replace "/src/assets/images/" or "src/assets/images/" with "/assets/images/"
+    sanitized = sanitized.replace(/\/?src\/assets\/images\//g, '/assets/images/');
+    // Ensure all "/assets/images" or "assets/images" start with "/assets/images/"
+    sanitized = sanitized.replace(/\/?assets\/images\//g, '/assets/images/');
     return JSON.parse(sanitized);
   } catch (e) {
     return null;
@@ -122,6 +126,9 @@ const resolveImgUrl = (url: string | undefined): string => {
   }
   if (resolved.startsWith('assets/images/')) {
     resolved = '/' + resolved;
+  }
+  if (resolved.startsWith('//')) {
+    resolved = resolved.replace(/^\/+/, '/');
   }
   return resolved;
 };
