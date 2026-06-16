@@ -33,7 +33,7 @@ const HIGHLIGHTS = [
     title: 'Just Birthday Decor Package',
     subtitle: 'Ambient Balloon Cloude & Golden Frames',
     description: 'A charming, high-end intimate setup featuring pastel-purple and elegant dusty-rose organic balloon arches, gold circular metal frames, customized name signs, and warm fairy lights.',
-    image: '/assets/images/aura_birthday_decor_1781397692017.jpg',
+    image: '/images/aura_birthday_decor_1781397692017.jpg',
     features: ['Organic Silk Balloon Arches', 'Gold Plate Cake Plinth', 'Romantic Candle & Fairy Lights'],
     price: 10000
   },
@@ -43,7 +43,7 @@ const HIGHLIGHTS = [
     title: 'Birthday Decor & Dinner Package',
     subtitle: 'Premium Curation with 5 Main Dishes',
     description: 'An elite dual-experience offering premium stage backdrop styling paired with a magnificent seated buffet hosting 5 signature gourmet main courses served in warm brass chafing dishes under floating crystal chandeliers.',
-    image: '/assets/images/aura_birthday_dinner_1781399061307.jpg',
+    image: '/images/aura_birthday_dinner_1781399061307.jpg',
     features: ['5 Gourmet Main Dishes Buffet', 'Premium Stage Backdrop Decor', 'Fine Cutlery & Charger Plates'],
     price: 400000
   },
@@ -53,7 +53,7 @@ const HIGHLIGHTS = [
     title: 'Birthday Decor + DJ + Dinner Package',
     subtitle: 'The Ultimate Milestone Extravaganza',
     description: 'A custom, high-octane celebration package integrating complete theme decor, professional live sound DJ booth setups, warm mood wash-lights, and an expansive dinner buffet featuring 5 main courses.',
-    image: '/assets/images/aura_birthday_dj_1781399084641.jpg',
+    image: '/images/aura_birthday_dj_1781399084641.jpg',
     features: ['Pro DJ Sound System & Laser Uplighting', '5-Course Luxury Feast Buffet', 'Immersive Atmospheric Backdrop Display'],
     price: 450000
   },
@@ -63,7 +63,7 @@ const HIGHLIGHTS = [
     title: 'Nikah Decoration',
     subtitle: 'Ethereal Pristine White & Mirror Elements',
     description: 'A traditional yet contemporary sanctuary styled with fragrant white jasmine vines, hanging glass floral orbs, clear crystal seating, and seamless mirror aisles reflecting shimmering gold light.',
-    image: '/assets/images/aura_nikah_decor_1781397753467.jpg',
+    image: '/images/aura_nikah_decor_1781397753467.jpg',
     features: ['Pure Jasmine Backdrops', 'High-Gloss Mirror Aisles', 'Plum Velvet Officiant Diwan']
   },
   {
@@ -72,7 +72,7 @@ const HIGHLIGHTS = [
     title: 'Mayun Decoration',
     subtitle: 'Vibrant Mustard Blooms & Brass Accents',
     description: 'A glowing festive setting celebrating old-world romance with dense marigold drops, orange crêpe drapes, low-sitting handcrafted velvet diwans, and authentic brass planters.',
-    image: '/assets/images/aura_mayun_decor_1781397736458.jpg',
+    image: '/images/aura_mayun_decor_1781397736458.jpg',
     features: ['Dense Marigold Clouds', 'Embroidered Phulkari Drapes', 'Brass Oil-Lamp Arrays']
   },
   {
@@ -81,7 +81,7 @@ const HIGHLIGHTS = [
     title: 'Barat Decoration',
     subtitle: 'Couture Crimson Stage & Gilded Pillars',
     description: 'The monumental moment. Styled with soaring backdrop walls of deepest red roses, hand-carved gold seating, heavy crystal chandeliers, and a regal red velvet carpeted runway.',
-    image: '/assets/images/aura_barat_decor_1781397775755.jpg',
+    image: '/images/aura_barat_decor_1781397775755.jpg',
     features: ['Grand Rose Background Stage', 'Multi-Tiered Crystal Chandeliers', 'Regal Gilded Seating']
   },
   {
@@ -90,7 +90,7 @@ const HIGHLIGHTS = [
     title: 'Valima Decoration',
     subtitle: 'Sophisticated Foliage & Sage reception',
     description: 'A modern, ultra-luxurious reception. White gypsophila mist clouds paired with dusty silver and ice blue drapery, exquisite candle trees, and bespoke tableware with fine geometric borders.',
-    image: '/assets/images/aura_valima_decor_1781397793479.jpg',
+    image: '/images/aura_valima_decor_1781397793479.jpg',
     features: ['Satin Sage Drapery', 'Gypsophila Cloud Hanging', 'Geometric Champagne Glassware']
   },
   {
@@ -99,7 +99,7 @@ const HIGHLIGHTS = [
     title: 'Office Pakistan Independence Decor',
     subtitle: 'Corporate Emerald & White National Pride',
     description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
-    image: '/assets/images/aura_office_decor_1781397716019.jpg',
+    image: '/images/aura_office_decor_1781397716019.jpg',
     features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs']
   }
 ];
@@ -108,10 +108,12 @@ const sanitizeStorageJson = (raw: string | null) => {
   if (!raw) return null;
   try {
     let sanitized = raw;
-    // Replace "/src/assets/images/" or "src/assets/images/" with "/assets/images/"
-    sanitized = sanitized.replace(/\/?src\/assets\/images\//g, '/assets/images/');
-    // Ensure all "/assets/images" or "assets/images" start with "/assets/images/"
-    sanitized = sanitized.replace(/\/?assets\/images\//g, '/assets/images/');
+    // Replace "/src/assets/images/" or "src/assets/images/" with "/images/"
+    sanitized = sanitized.replace(/\/?src\/assets\/images\//g, '/images/');
+    // Ensure all "/assets/images" or "assets/images" start with "/images/"
+    sanitized = sanitized.replace(/\/?assets\/images\//g, '/images/');
+    // Handle any existing "/images/" correctly
+    sanitized = sanitized.replace(/\/?images\//g, '/images/');
     return JSON.parse(sanitized);
   } catch (e) {
     return null;
@@ -140,14 +142,14 @@ const resolveImgUrl = (url: string | undefined): string => {
   
   for (const filename of KNOWN_FILENAMES) {
     if (resolved.includes(filename)) {
-      return `/assets/images/${filename}`;
+      return `/images/${filename}`;
     }
   }
 
-  if (resolved.includes('assets/images/')) {
-    const parts = resolved.split('assets/images/');
+  if (resolved.includes('images/')) {
+    const parts = resolved.split('images/');
     const filename = parts[parts.length - 1];
-    return `/assets/images/${filename}`;
+    return `/images/${filename}`;
   }
 
   if (resolved.startsWith('//')) {
@@ -191,7 +193,7 @@ export default function App() {
         title: 'Aura Celebrations',
         subtitle: 'CHOREOGRAPHING ATMOSPHERIC MASTERPIECES',
         description: 'We craft hyper-exclusive, premium sensory landscapes for elite celebrations in Karachi, Pakistan. Balancing architectural density, pure velvet textiles, and raw flora sculpting.',
-        image: '/assets/images/celestique_reception_1781396299184.jpg'
+        image: '/images/celestique_reception_1781396299184.jpg'
       },
       customSections: []
     };
@@ -207,7 +209,7 @@ export default function App() {
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed) return parsed;
+    if (parsed && parsed.length >= 8) return parsed;
     return HIGHLIGHTS;
   });
 
@@ -538,7 +540,7 @@ export default function App() {
             {/* Elegant Logo Image Frame */}
             <div id="brand-logo-crest" className="relative group shrink-0">
               <img 
-                src={resolveImgUrl("/assets/images/aura_logo_1781397175518.jpg")} 
+                src={resolveImgUrl("/images/aura_logo_1781397175518.jpg")} 
                 alt="Aura Celebrations" 
                 className="w-10 h-10 rounded-full border border-gold-accent object-cover bg-plum-900/40 group-hover:scale-105 transition-transform duration-300"
                 referrerPolicy="no-referrer"
@@ -737,7 +739,7 @@ export default function App() {
                 <div className="absolute top-0 left-0 right-6 bottom-6 overflow-hidden rounded border border-gold-accent shadow-2xl z-10 group">
                   <img 
                     id="hero-main-img"
-                    src={resolveImgUrl(webConfig.hero.image || '/assets/images/celestique_hero_1781396253917.jpg')}
+                    src={resolveImgUrl(webConfig.hero.image || '/images/celestique_hero_1781396253917.jpg')}
                     alt="High-end curated wedding reception tablescape design by Aura Celebrations"
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                     referrerPolicy="no-referrer"
@@ -1738,7 +1740,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full border border-gold-accent object-cover bg-plum-900/45 shrink-0 overflow-hidden">
                 <img 
-                  src={resolveImgUrl("/assets/images/aura_logo_1781397175518.jpg")} 
+                  src={resolveImgUrl("/images/aura_logo_1781397175518.jpg")} 
                   alt="Aura Celebrations" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"

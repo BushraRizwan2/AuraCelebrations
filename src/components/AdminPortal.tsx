@@ -130,10 +130,12 @@ const sanitizeStorageJson = (raw: string | null) => {
   if (!raw) return null;
   try {
     let sanitized = raw;
-    // Replace "/src/assets/images/" or "src/assets/images/" with "/assets/images/"
-    sanitized = sanitized.replace(/\/?src\/assets\/images\//g, '/assets/images/');
-    // Ensure all "/assets/images" or "assets/images" start with "/assets/images/"
-    sanitized = sanitized.replace(/\/?assets\/images\//g, '/assets/images/');
+    // Replace "/src/assets/images/" or "src/assets/images/" with "/images/"
+    sanitized = sanitized.replace(/\/?src\/assets\/images\//g, '/images/');
+    // Ensure all "/assets/images" or "assets/images" start with "/images/"
+    sanitized = sanitized.replace(/\/?assets\/images\//g, '/images/');
+    // Handle any existing "/images/" correctly
+    sanitized = sanitized.replace(/\/?images\//g, '/images/');
     return JSON.parse(sanitized);
   } catch (e) {
     return null;
@@ -162,14 +164,14 @@ const resolveImgUrl = (url: string | undefined): string => {
   
   for (const filename of KNOWN_FILENAMES) {
     if (resolved.includes(filename)) {
-      return `/assets/images/${filename}`;
+      return `/images/${filename}`;
     }
   }
 
-  if (resolved.includes('assets/images/')) {
-    const parts = resolved.split('assets/images/');
+  if (resolved.includes('images/')) {
+    const parts = resolved.split('images/');
     const filename = parts[parts.length - 1];
-    return `/assets/images/${filename}`;
+    return `/images/${filename}`;
   }
 
   if (resolved.startsWith('//')) {
@@ -279,7 +281,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Aura Celebrations',
         subtitle: 'CHOREOGRAPHING ATMOSPHERIC MASTERPIECES',
         description: 'We craft hyper-exclusive, premium sensory landscapes for elite celebrations in Karachi, Pakistan. Balancing architectural density, pure velvet textiles, and raw flora sculpting.',
-        image: '/assets/images/celestique_reception_1781396299184.jpg'
+        image: '/images/celestique_reception_1781396299184.jpg'
       },
       customSections: []
     };
@@ -303,7 +305,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           'Fine satin or velvet menu ribbon styling',
           'Post-event white-glove strike and retrieval'
         ],
-        image: '/assets/images/celestique_tablescape_1781396278721.jpg'
+        image: '/images/celestique_tablescape_1781396278721.jpg'
       },
       {
         id: 'floral',
@@ -318,7 +320,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           'Fragrance-profile design custom to the venue',
           'Sustainably sourced, water-retaining mechanics'
         ],
-        image: '/assets/images/celestique_floral_1781396321270.jpg'
+        image: '/images/celestique_floral_1781396321270.jpg'
       },
       {
         id: 'reception',
@@ -333,7 +335,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           'Dynamic low-lying fog and warm wash-lights',
           'Professional certified atmospheric technicians'
         ],
-        image: '/assets/images/celestique_reception_1781396299184.jpg'
+        image: '/images/celestique_reception_1781396299184.jpg'
       }
     ];
     return defaults;
@@ -342,7 +344,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed) return parsed;
+    if (parsed && parsed.length >= 8) return parsed;
     const defaults = [
       {
         id: 'highlight-birthday-decor',
@@ -350,7 +352,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Just Birthday Decor Package',
         subtitle: 'Ambient Balloon Cloude & Golden Frames',
         description: 'A charming, high-end intimate setup featuring pastel-purple and elegant dusty-rose organic balloon arches, gold circular metal frames, customized name signs, and warm fairy lights.',
-        image: '/assets/images/aura_birthday_decor_1781397692017.jpg',
+        image: '/images/aura_birthday_decor_1781397692017.jpg',
         features: ['Organic Silk Balloon Arches', 'Gold Plate Cake Plinth', 'Romantic Candle & Fairy Lights'],
         price: 10000
       },
@@ -360,7 +362,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Birthday Decor & Dinner Package',
         subtitle: 'Premium Curation with 5 Main Dishes',
         description: 'An elite dual-experience offering premium stage backdrop styling paired with a magnificent seated buffet hosting 5 signature gourmet main courses served in warm brass chafing dishes under floating crystal chandeliers.',
-        image: '/assets/images/aura_birthday_dinner_1781399061307.jpg',
+        image: '/images/aura_birthday_dinner_1781399061307.jpg',
         features: ['5 Gourmet Main Dishes Buffet', 'Premium Stage Backdrop Decor', 'Fine Cutlery & Charger Plates'],
         price: 400000
       },
@@ -370,9 +372,59 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
         title: 'Birthday Decor + DJ + Dinner Package',
         subtitle: 'The Ultimate Milestone Extravaganza',
         description: 'A custom, high-octane celebration package integrating complete theme decor, professional live sound DJ booth setups, warm mood wash-lights, and an expansive dinner buffet featuring 5 main courses.',
-        image: '/assets/images/aura_birthday_dj_1781399084641.jpg',
+        image: '/images/aura_birthday_dj_1781399084641.jpg',
         features: ['Pro DJ Sound System & Laser Uplighting', '5-Course Luxury Feast Buffet', 'Immersive Atmospheric Backdrop Display'],
         price: 450000
+      },
+      {
+        id: 'highlight-nikah',
+        category: 'Nikah' as const,
+        title: 'Nikah Decoration',
+        subtitle: 'Ethereal Pristine White & Mirror Elements',
+        description: 'A traditional yet contemporary sanctuary styled with fragrant white jasmine vines, hanging glass floral orbs, clear crystal seating, and seamless mirror aisles reflecting shimmering gold light.',
+        image: '/images/aura_nikah_decor_1781397753467.jpg',
+        features: ['Pure Jasmine Backdrops', 'High-Gloss Mirror Aisles', 'Plum Velvet Officiant Diwan'],
+        price: 320000
+      },
+      {
+        id: 'highlight-mayun',
+        category: 'Wedding' as const,
+        title: 'Mayun Decoration',
+        subtitle: 'Vibrant Mustard Blooms & Brass Accents',
+        description: 'A glowing festive setting celebrating old-world romance with dense marigold drops, orange crêpe drapes, low-sitting handcrafted velvet diwans, and authentic brass planters.',
+        image: '/images/aura_mayun_decor_1781397736458.jpg',
+        features: ['Dense Marigold Clouds', 'Embroidered Phulkari Drapes', 'Brass Oil-Lamp Arrays'],
+        price: 280000
+      },
+      {
+        id: 'highlight-barat',
+        category: 'Wedding' as const,
+        title: 'Barat Decoration',
+        subtitle: 'Couture Crimson Stage & Gilded Pillars',
+        description: 'The monumental moment. Styled with soaring backdrop walls of deepest red roses, hand-carved gold seating, heavy crystal chandeliers, and a regal red velvet carpeted runway.',
+        image: '/images/aura_barat_decor_1781397775755.jpg',
+        features: ['Grand Rose Background Stage', 'Multi-Tiered Crystal Chandeliers', 'Regal Gilded Seating'],
+        price: 650000
+      },
+      {
+        id: 'highlight-valima',
+        category: 'Wedding' as const,
+        title: 'Valima Decoration',
+        subtitle: 'Sophisticated Foliage & Sage reception',
+        description: 'A modern, ultra-luxurious reception. White gypsophila mist clouds paired with dusty silver and ice blue drapery, exquisite candle trees, and bespoke tableware with fine geometric borders.',
+        image: '/images/aura_valima_decor_1781397793479.jpg',
+        features: ['Satin Sage Drapery', 'Gypsophila Cloud Hanging', 'Geometric Champagne Glassware'],
+        price: 580000
+      },
+      {
+        id: 'highlight-office',
+        category: 'Office decor' as const,
+        title: 'Office Pakistan Independence Decor',
+        subtitle: 'Corporate Emerald & White National Pride',
+        description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
+        image: '/images/aura_office_decor_1781397716019.jpg',
+        features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs'],
+        price: 150000
       }
     ];
     return defaults;
@@ -2535,7 +2587,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                                     <option value="Birthday">Birthday</option>
                                     <option value="Nikah">Nikah</option>
                                     <option value="Wedding">Wedding</option>
-                                    <option value="Office Decor">Office Decor</option>
+                                    <option value="Office decor">Office decor</option>
                                   </select>
                                 </div>
                                 <div>

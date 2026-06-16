@@ -14,7 +14,7 @@ export const LUXURY_SERVICES: StylingService[] = [
       'Fine satin or velvet menu ribbon styling',
       'Post-event white-glove strike and retrieval'
     ],
-    image: '/assets/images/celestique_tablescape_1781396278721.jpg'
+    image: '/images/celestique_tablescape_1781396278721.jpg'
   },
   {
     id: 'floral',
@@ -29,7 +29,7 @@ export const LUXURY_SERVICES: StylingService[] = [
       'Fragrance-profile design custom to the venue',
       'Sustainably sourced, water-retaining mechanics'
     ],
-    image: '/assets/images/celestique_floral_1781396321270.jpg'
+    image: '/images/celestique_floral_1781396321270.jpg'
   },
   {
     id: 'reception',
@@ -44,7 +44,7 @@ export const LUXURY_SERVICES: StylingService[] = [
       'Dynamic low-lying fog and warm wash-lights',
       'Professional certified atmospheric technicians'
     ],
-    image: '/assets/images/celestique_reception_1781396299184.jpg'
+    image: '/images/celestique_reception_1781396299184.jpg'
   }
 ];
 
