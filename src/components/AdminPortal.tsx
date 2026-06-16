@@ -159,7 +159,9 @@ const resolveImgUrl = (url: string | undefined): string => {
     'celestique_floral_1781396321270.jpg',
     'celestique_hero_1781396253917.jpg',
     'celestique_reception_1781396299184.jpg',
-    'celestique_tablescape_1781396278721.jpg'
+    'celestique_tablescape_1781396278721.jpg',
+    'aura_corporate_dinner_1781653151776.jpg',
+    'aura_corporate_picnic_1781653172644.jpg'
   ];
   
   for (const filename of KNOWN_FILENAMES) {
@@ -344,7 +346,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed && parsed.length >= 8) return parsed;
+    if (parsed && parsed.length >= 10) return parsed;
     const defaults = [
       {
         id: 'highlight-birthday-decor',
@@ -418,13 +420,33 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       },
       {
         id: 'highlight-office',
-        category: 'Office decor' as const,
-        title: 'Office Pakistan Independence Decor',
-        subtitle: 'Corporate Emerald & White National Pride',
+        category: 'Corporate' as const,
+        title: 'Office Independence Day Decor',
+        subtitle: 'Emerald & White National Pride Style',
         description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
         image: '/images/aura_office_decor_1781397716019.jpg',
         features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs'],
         price: 150000
+      },
+      {
+        id: 'highlight-corporate-dinner',
+        category: 'Corporate' as const,
+        title: 'Corporate Annual Gala Dinner',
+        subtitle: 'Ultra-Exclusive Ballrooms & Curation',
+        description: 'Imperial banquet arrangements matching core brand identities. Floating floral orbs, cool-wash uplighting, and sophisticated customized tableware designs.',
+        image: '/images/aura_corporate_dinner_1781653151776.jpg',
+        features: ['Hydrangea & White Orchid Orbs', 'Cool Wash LED Atmosphere', 'Gold Trimmed Dinnerware Setups'],
+        price: 800000
+      },
+      {
+        id: 'highlight-corporate-picnic',
+        category: 'Corporate' as const,
+        title: 'Luxury Corporate Team Outings & Picnics',
+        subtitle: 'Bohemian Garden Cabanas & Mocktail Bars',
+        description: 'A charming, highly stylized outdoor picnic. Relaxed linen seating pads, pristine white wooden tables, premium organic juice bars, and fun bespoke lawn lounge setups.',
+        image: '/images/aura_corporate_picnic_1781653172644.jpg',
+        features: ['Custom Boho Cabana Shelters', 'Prestige Velvet/Linen Seating Pads', 'Premium Mocktail Lounge Stations'],
+        price: 350000
       }
     ];
     return defaults;
@@ -2587,7 +2609,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                                     <option value="Birthday">Birthday</option>
                                     <option value="Nikah">Nikah</option>
                                     <option value="Wedding">Wedding</option>
-                                    <option value="Office decor">Office decor</option>
+                                    <option value="Corporate">Corporate</option>
                                   </select>
                                 </div>
                                 <div>

@@ -95,12 +95,32 @@ const HIGHLIGHTS = [
   },
   {
     id: 'highlight-office',
-    category: 'Office decor' as const,
-    title: 'Office Pakistan Independence Decor',
-    subtitle: 'Corporate Emerald & White National Pride',
-    description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
+    category: 'Corporate' as const,
+    title: 'Office Independence Day Decor',
+    subtitle: 'Emerald & White National Pride Style',
+    description: 'Elegant patriotic festive styling for office premises celebration. Festive emerald drapes matched with fresh orchids and warm crescent lighting profiles.',
     image: '/images/aura_office_decor_1781397716019.jpg',
     features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs']
+  },
+  {
+    id: 'highlight-corporate-dinner',
+    category: 'Corporate' as const,
+    title: 'Corporate Annual Gala Dinner',
+    subtitle: 'Ultra-Exclusive Ballrooms & Curation',
+    description: 'Imperial banquet arrangements matching core brand identities. Floating floral orbs, cool-wash uplighting, and sophisticated customized tableware designs.',
+    image: '/images/aura_corporate_dinner_1781653151776.jpg',
+    features: ['Hydrangea & White Orchid Orbs', 'Cool Wash LED Atmosphere', 'Gold Trimmed Dinnerware Setups'],
+    price: 800000
+  },
+  {
+    id: 'highlight-corporate-picnic',
+    category: 'Corporate' as const,
+    title: 'Luxury Corporate Team Outings & Picnics',
+    subtitle: 'Bohemian Garden Cabanas & Mocktail Bars',
+    description: 'A charming, highly stylized outdoor picnic. Relaxed linen seating pads, pristine white wooden tables, premium organic juice bars, and fun bespoke lawn lounge setups.',
+    image: '/images/aura_corporate_picnic_1781653172644.jpg',
+    features: ['Custom Boho Cabana Shelters', 'Prestige Velvet/Linen Seating Pads', 'Premium Mocktail Lounge Stations'],
+    price: 350000
   }
 ];
 
@@ -137,7 +157,9 @@ const resolveImgUrl = (url: string | undefined): string => {
     'celestique_floral_1781396321270.jpg',
     'celestique_hero_1781396253917.jpg',
     'celestique_reception_1781396299184.jpg',
-    'celestique_tablescape_1781396278721.jpg'
+    'celestique_tablescape_1781396278721.jpg',
+    'aura_corporate_dinner_1781653151776.jpg',
+    'aura_corporate_picnic_1781653172644.jpg'
   ];
   
   for (const filename of KNOWN_FILENAMES) {
@@ -269,7 +291,7 @@ export default function App() {
   }, []);
 
   // Highlights active category filter
-  const [activeHighlightCategory, setActiveHighlightCategory] = useState<'all' | 'Birthday' | 'Nikah' | 'Wedding' | 'Office decor'>('all');
+  const [activeHighlightCategory, setActiveHighlightCategory] = useState<'all' | 'Birthday' | 'Nikah' | 'Wedding' | 'Corporate'>('all');
   const filteredHighlights = useMemo(() => {
     if (activeHighlightCategory === 'all') return dynamicHighlights;
     return dynamicHighlights.filter(h => h.category === activeHighlightCategory);
@@ -1103,7 +1125,7 @@ export default function App() {
 
         {/* Dynamic Category Filtering Tabs */}
         <div className="flex flex-wrap justify-center items-center gap-3 mb-16 max-w-3xl mx-auto">
-          {(['all', 'Birthday', 'Nikah', 'Wedding', 'Office decor'] as const).map(cat => (
+          {(['all', 'Birthday', 'Nikah', 'Wedding', 'Corporate'] as const).map(cat => (
             <button
               key={cat}
               onClick={() => setActiveHighlightCategory(cat)}
@@ -1933,10 +1955,10 @@ export default function App() {
                         {selectedHighlight.category === 'Birthday' && (
                           <span>A mesmerizing dual-focus setup where custom high-gloss lacquer finishes on frame installations produce majestic camera-ready sheens. Soft lavender wash uplighting creates premium atmospheric photography.</span>
                         )}
-                        {selectedHighlight.category === 'Office decor' && (
-                          <span>Perfect for high-density lobby entrances, public forums, or custom executive stages. Corporate branding color palettes or emblems can be integrated with backlighting arrays seamlessly.</span>
+                        {selectedHighlight.category === 'Corporate' && (
+                          <span>Perfect for high-density lobby entrances, annual dinners, company outings, or custom executive stages. Corporate branding color palettes or emblems can be integrated with backlighting arrays seamlessly.</span>
                         )}
-                        {!['Wedding', 'Nikah', 'Birthday', 'Office decor'].includes(selectedHighlight.category) && (
+                        {!['Wedding', 'Nikah', 'Birthday', 'Corporate'].includes(selectedHighlight.category) && (
                           <span>Our curating specialists recommend coordinating your color swatches with premium silk overlays to balance atmospheric harmony. Customized configurations are fully tailored upon booking verification.</span>
                         )}
                       </div>
