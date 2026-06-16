@@ -143,12 +143,35 @@ const sanitizeStorageJson = (raw: string | null) => {
 const resolveImgUrl = (url: string | undefined): string => {
   if (!url) return '';
   let resolved = url;
-  if (resolved.includes('src/assets/images/')) {
-    resolved = resolved.replace(/.*src\/assets\/images\//, '/assets/images/');
+  
+  const KNOWN_FILENAMES = [
+    'aura_barat_decor_1781397775755.jpg',
+    'aura_birthday_decor_1781397692017.jpg',
+    'aura_birthday_dinner_1781399061307.jpg',
+    'aura_birthday_dj_1781399084641.jpg',
+    'aura_logo_1781397175518.jpg',
+    'aura_mayun_decor_1781397736458.jpg',
+    'aura_nikah_decor_1781397753467.jpg',
+    'aura_office_decor_1781397716019.jpg',
+    'aura_valima_decor_1781397793479.jpg',
+    'celestique_floral_1781396321270.jpg',
+    'celestique_hero_1781396253917.jpg',
+    'celestique_reception_1781396299184.jpg',
+    'celestique_tablescape_1781396278721.jpg'
+  ];
+  
+  for (const filename of KNOWN_FILENAMES) {
+    if (resolved.includes(filename)) {
+      return `/assets/images/${filename}`;
+    }
   }
-  if (resolved.startsWith('assets/images/')) {
-    resolved = '/' + resolved;
+
+  if (resolved.includes('assets/images/')) {
+    const parts = resolved.split('assets/images/');
+    const filename = parts[parts.length - 1];
+    return `/assets/images/${filename}`;
   }
+
   if (resolved.startsWith('//')) {
     resolved = resolved.replace(/^\/+/, '/');
   }
@@ -2426,7 +2449,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                           ) : (
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
-                                <img src={resolveImgUrl(srv.image)} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={srv.title} />
+                                <img src={resolveImgUrl(srv.image)} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={srv.title} referrerPolicy="no-referrer" />
                                 <div>
                                   <h5 className="font-serif text-sm text-gold-accent font-semibold">{srv.title}</h5>
                                   <p className="text-[11px] text-champagne-light/40 font-mono">Starts at ₨ {srv.priceStart.toLocaleString()}</p>
@@ -2551,7 +2574,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                           ) : (
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
-                                <img src={resolveImgUrl(high.image)} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={high.title} />
+                                <img src={resolveImgUrl(high.image)} className="w-12 h-12 rounded object-cover shrink-0 border border-gold-dark/20" alt={high.title} referrerPolicy="no-referrer" />
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <h5 className="font-serif text-sm text-gold-accent font-semibold">{high.title}</h5>
