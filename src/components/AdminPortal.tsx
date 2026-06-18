@@ -30,10 +30,26 @@ import {
   Settings,
   Bell,
   Eye,
-  Check
+  Check,
+  Pencil,
+  History
 } from 'lucide-react';
 
 // Interfaces for our Admin State Data
+export interface ChangeLogEntry {
+  id: string;
+  timestamp: string;
+  type: 'Customer' | 'Vendor';
+  entityId: string;
+  entityName: string;
+  action: 'Created' | 'Modified' | 'Deleted';
+  changes: {
+    field: string;
+    oldValue: string;
+    newValue: string;
+  }[];
+}
+
 export interface Customer {
   id: string;
   fullName: string;
@@ -47,11 +63,12 @@ export interface Customer {
 export interface Vendor {
   id: string;
   companyName: string;
-  category: 'Catering' | 'Decorators' | 'Sound/DJ Music' | 'Photography' | 'Bid Boxes & Giveaways';
+  category: 'Catering' | 'Decorators' | 'Sound/DJ Music' | 'Photography' | 'Bid Boxes & Giveaways' | 'Music system' | 'Sea sports' | 'Printings' | 'flowers';
   contactPerson: string;
   phone: string;
   baseRate: number;
   pendingBalance: number;
+  address?: string;
 }
 
 export interface FeedbackLog {
@@ -61,6 +78,7 @@ export interface FeedbackLog {
   feedbackText: string;
   internalNotes: string; // Planner experience log
   eventDate: string;
+  showOnWebsite?: boolean;
 }
 
 export interface LedgerEntry {
@@ -91,11 +109,14 @@ const INITIAL_CUSTOMERS: Customer[] = [
 ];
 
 const INITIAL_VENDORS: Vendor[] = [
-  { id: 'v1', companyName: 'Shalimar Caterers', category: 'Catering', contactPerson: 'Muhammad Rizwan', phone: '+92 300 8443221', baseRate: 350000, pendingBalance: 120000 },
-  { id: 'v2', companyName: 'Bloom & Stem Decorators', category: 'Decorators', contactPerson: 'Fatima Alvi', phone: '+92 321 4455888', baseRate: 150000, pendingBalance: 0 },
-  { id: 'v3', companyName: 'Sonic Wave DJ & Sound', category: 'Sound/DJ Music', contactPerson: 'DJ Khurram', phone: '+92 312 9991122', baseRate: 80000, pendingBalance: 30000 },
-  { id: 'v4', companyName: 'Dawood Studio (Photography)', category: 'Photography', contactPerson: 'Dawood Rehman', phone: '+92 333 1111555', baseRate: 250000, pendingBalance: 90000 },
-  { id: 'v5', companyName: 'Luxe Giveaways Co.', category: 'Bid Boxes & Giveaways', contactPerson: 'Amna Shah', phone: '+92 300 7771234', baseRate: 60000, pendingBalance: 15000 },
+  { id: 'v1', companyName: 'Shalimar Caterers', category: 'Catering', contactPerson: 'Muhammad Rizwan', phone: '+92 300 8443221', baseRate: 350000, pendingBalance: 120000, address: 'Plot 23-C, Stadium Commercial Lane 2, DHA Phase 5, Karachi' },
+  { id: 'v2', companyName: 'Bloom & Stem Decorators', category: 'Decorators', contactPerson: 'Fatima Alvi', phone: '+92 321 4455888', baseRate: 150000, pendingBalance: 0, address: '12-C, Badar Commercial Area, Street 5, DHA Phase 5, Karachi' },
+  { id: 'v3', companyName: 'Sonic Wave DJ & Sound', category: 'Music system', contactPerson: 'DJ Khurram', phone: '+92 312 9991122', baseRate: 80000, pendingBalance: 30000, address: 'Office 402, 4th Floor, Clifton Centre, Block 5, Clifton, Karachi' },
+  { id: 'v4', companyName: 'Dawood Studio (Photography)', category: 'Photography', contactPerson: 'Dawood Rehman', phone: '+92 333 1111555', baseRate: 250000, pendingBalance: 90000, address: 'Suite 2B, 3rd Commercial Lane, Zamzama Blvd, Phase 5, DHA, Karachi' },
+  { id: 'v5', companyName: 'Luxe Giveaways Co.', category: 'Bid Boxes & Giveaways', contactPerson: 'Amna Shah', phone: '+92 300 7771234', baseRate: 60000, pendingBalance: 15000, address: 'Building 14-E, Bukhari Commercial Area, Phase 6, DHA, Karachi' },
+  { id: 'v6', companyName: 'Arabian Sea Watersports & Charters', category: 'Sea sports', contactPerson: 'Sajid Mehmood', phone: '+92 321 8234567', baseRate: 180000, pendingBalance: 45000, address: 'Marina Club Road, Phase 8, DHA, Karachi' },
+  { id: 'v7', companyName: 'Karachi Offset & Fine Printings', category: 'Printings', contactPerson: 'Farhan Sheikh', phone: '+92 301 2987654', baseRate: 45000, pendingBalance: 0, address: 'Shop 4, I.I. Chundrigar Road, Karachi' },
+  { id: 'v8', companyName: 'Ghazal Flower Exotics', category: 'flowers', contactPerson: 'Zaryab Gul', phone: '+92 333 3451298', baseRate: 110000, pendingBalance: 15000, address: 'Main Teen Talwar Roundtable Ground, Clifton, Karachi' }
 ];
 
 const INITIAL_FEEDBACKS: FeedbackLog[] = [
@@ -159,9 +180,7 @@ const resolveImgUrl = (url: string | undefined): string => {
     'celestique_floral_1781396321270.jpg',
     'celestique_hero_1781396253917.jpg',
     'celestique_reception_1781396299184.jpg',
-    'celestique_tablescape_1781396278721.jpg',
-    'aura_corporate_dinner_1781653151776.jpg',
-    'aura_corporate_picnic_1781653172644.jpg'
+    'celestique_tablescape_1781396278721.jpg'
   ];
   
   for (const filename of KNOWN_FILENAMES) {
@@ -198,7 +217,20 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
   const [vendors, setVendors] = useState<Vendor[]>(() => {
     const raw = localStorage.getItem('aura_vendors');
-    return raw ? JSON.parse(raw) : INITIAL_VENDORS;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as Vendor[];
+        // Check if any of the new default vendors are missing by checking their IDs
+        const missing = INITIAL_VENDORS.filter(iv => !parsed.some(pv => pv.id === iv.id));
+        if (missing.length > 0) {
+          return [...parsed, ...missing];
+        }
+        return parsed;
+      } catch (e) {
+        return INITIAL_VENDORS;
+      }
+    }
+    return INITIAL_VENDORS;
   });
 
   const [feedbacks, setFeedbacks] = useState<FeedbackLog[]>(() => {
@@ -228,8 +260,63 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
     localStorage.setItem('aura_ledger', JSON.stringify(ledger));
   }, [ledger]);
 
+  // Change log history state
+  const [changeHistory, setChangeHistory] = useState<ChangeLogEntry[]>(() => {
+    const raw = localStorage.getItem('aura_change_history');
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return [
+      {
+        id: 'hist-1',
+        timestamp: new Date(Date.now() - 3600000 * 3).toLocaleString(),
+        type: 'Customer',
+        entityId: 'c1',
+        entityName: 'Ayesha Khan',
+        action: 'Modified',
+        changes: [
+          { field: 'Lifecycle Status', oldValue: 'Potential', newValue: 'Served' }
+        ]
+      },
+      {
+        id: 'hist-2',
+        timestamp: new Date(Date.now() - 3600000 * 5).toLocaleString(),
+        type: 'Vendor',
+        entityId: 'v1',
+        entityName: 'Shalimar Caterers',
+        action: 'Modified',
+        changes: [
+          { field: 'Pending Outstanding Balance', oldValue: '₨ 150000', newValue: '₨ 120000' }
+        ]
+      }
+    ];
+  });
+
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('aura_change_history', JSON.stringify(changeHistory));
+  }, [changeHistory]);
+
+  // Lock body scroll when the Admin Portal overlay is open
+  useEffect(() => {
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   // Operational states
-  const [activeTab, setActiveTab] = useState<'Directory' | 'Feedback' | 'Financial Ledger' | 'Notifications' | 'Website Customizer'>('Directory');
+  const [activeTab, setActiveTab] = useState<'Directory' | 'Feedback' | 'Financial Ledger' | 'Notifications' | 'Change History' | 'Website Customizer'>('Directory');
+  const [histTypeFilter, setHistTypeFilter] = useState<string>('All');
+  const [histActionFilter, setHistActionFilter] = useState<string>('All');
+  const [histSearch, setHistSearch] = useState<string>('');
   
   // Real-time notification and website states
   const [notifications, setNotifications] = useState<any[]>(() => {
@@ -346,7 +433,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed && parsed.length >= 10) return parsed;
+    if (parsed && parsed.length >= 8) return parsed;
     const defaults = [
       {
         id: 'highlight-birthday-decor',
@@ -420,33 +507,13 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       },
       {
         id: 'highlight-office',
-        category: 'Corporate' as const,
-        title: 'Office Independence Day Decor',
-        subtitle: 'Emerald & White National Pride Style',
+        category: 'Office decor' as const,
+        title: 'Office Pakistan Independence Decor',
+        subtitle: 'Corporate Emerald & White National Pride',
         description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
         image: '/images/aura_office_decor_1781397716019.jpg',
         features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs'],
         price: 150000
-      },
-      {
-        id: 'highlight-corporate-dinner',
-        category: 'Corporate' as const,
-        title: 'Corporate Annual Gala Dinner',
-        subtitle: 'Ultra-Exclusive Ballrooms & Curation',
-        description: 'Imperial banquet arrangements matching core brand identities. Floating floral orbs, cool-wash uplighting, and sophisticated customized tableware designs.',
-        image: '/images/aura_corporate_dinner_1781653151776.jpg',
-        features: ['Hydrangea & White Orchid Orbs', 'Cool Wash LED Atmosphere', 'Gold Trimmed Dinnerware Setups'],
-        price: 800000
-      },
-      {
-        id: 'highlight-corporate-picnic',
-        category: 'Corporate' as const,
-        title: 'Luxury Corporate Team Outings & Picnics',
-        subtitle: 'Bohemian Garden Cabanas & Mocktail Bars',
-        description: 'A charming, highly stylized outdoor picnic. Relaxed linen seating pads, pristine white wooden tables, premium organic juice bars, and fun bespoke lawn lounge setups.',
-        image: '/images/aura_corporate_picnic_1781653172644.jpg',
-        features: ['Custom Boho Cabana Shelters', 'Prestige Velvet/Linen Seating Pads', 'Premium Mocktail Lounge Stations'],
-        price: 350000
       }
     ];
     return defaults;
@@ -613,7 +680,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
-  const [vendorCategoryFilter, setVendorCategoryFilter] = useState<string>('All');
+  const [vendorCategoryFilter, setVendorCategoryFilter] = useState<string>('Decorators');
 
   // --- STATE EXTENSIONS FOR ADVANCED GRID GOVERNANCE ---
   // Customers Grid states
@@ -634,6 +701,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [vendColFilterCategory, setVendColFilterCategory] = useState<string>('All');
   const [vendColFilterContact, setVendColFilterContact] = useState<string>('');
   const [vendColFilterPhone, setVendColFilterPhone] = useState<string>('');
+  const [vendColFilterAddress, setVendColFilterAddress] = useState<string>('');
   const [vendColFilterBaseRate, setVendColFilterBaseRate] = useState<string>('');
   const [vendColFilterBalance, setVendColFilterBalance] = useState<string>('');
   const [vendSortField, setVendSortField] = useState<string | null>(null);
@@ -652,6 +720,10 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [ledgSortAsc, setLedgSortAsc] = useState<boolean>(true);
   const [ledgPage, setLedgPage] = useState<number>(1);
   const [ledgPageSize, setLedgPageSize] = useState<number>(5);
+
+  // Feedback Grid / List states
+  const [feedPage, setFeedPage] = useState<number>(1);
+  const [feedPageSize, setFeedPageSize] = useState<number>(4);
 
   // Sorting helpers
   const handleCustSort = (field: string) => {
@@ -693,29 +765,29 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   ) => {
     const totalPages = Math.ceil(totalItems / pageSize) || 1;
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-plum-950/5 border-t border-plum-950/10 font-sans">
-        <span className="text-[11px] text-plum-950/60">
-          Showing <span className="font-semibold text-plum-950">{Math.min((currentPage - 1) * pageSize + 1, totalItems)}</span> to{' '}
-          <span className="font-semibold text-plum-950">{Math.min(currentPage * pageSize, totalItems)}</span> of{' '}
-          <span className="font-semibold text-plum-950">{totalItems}</span> results
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-plum-950 border-t border-gold-dark/20 font-sans">
+        <span className="text-[11px] text-champagne-light/60">
+          Showing <span className="font-semibold text-gold-accent">{Math.min((currentPage - 1) * pageSize + 1, totalItems)}</span> to{' '}
+          <span className="font-semibold text-gold-accent">{Math.min(currentPage * pageSize, totalItems)}</span> of{' '}
+          <span className="font-semibold text-gold-accent">{totalItems}</span> results
         </span>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setPage(Math.max(currentPage - 1, 1))}
             disabled={currentPage === 1}
-            className="border border-gold-dark/30 hover:border-gold-accent px-3 py-1 rounded text-[11px] text-plum-950 font-semibold bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="border border-gold-dark/40 hover:border-gold-accent hover:bg-gold-accent hover:text-plum-950 px-3 py-1 rounded text-[11px] text-gold-accent font-semibold bg-[#220a22]/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gold-accent disabled:cursor-not-allowed transition duration-200"
           >
             Previous
           </button>
-          <span className="text-[11px] text-plum-950/70 py-1 px-3 bg-plum-50 rounded border border-plum-950/5">
+          <span className="text-[11px] text-champagne-dark py-1 px-3 bg-[#1F0424] rounded border border-gold-dark/25">
             Page {currentPage} of {totalPages}
           </span>
           <button
             type="button"
             onClick={() => setPage(Math.min(currentPage + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="border border-gold-dark/30 hover:border-gold-accent px-3 py-1 rounded text-[11px] text-plum-950 font-semibold bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="border border-gold-dark/40 hover:border-gold-accent hover:bg-gold-accent hover:text-plum-950 px-3 py-1 rounded text-[11px] text-gold-accent font-semibold bg-[#220a22]/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gold-accent disabled:cursor-not-allowed transition duration-200"
           >
             Next
           </button>
@@ -727,17 +799,17 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const renderSortArrow = (field: string, currentField: string | null, isAsc: boolean) => {
     if (currentField !== field) {
       return (
-        <span className="text-plum-950/30 group-hover:text-plum-950/60 text-[9px] ml-1.5 inline-block transition cursor-pointer font-sans" title="Click to sort">
+        <span className="text-plum-950/40 group-hover:text-plum-950 text-[9px] ml-1.5 inline-block transition cursor-pointer font-sans" title="Click to sort">
           ⇅
         </span>
       );
     }
     return isAsc ? (
-      <span className="text-gold-dark font-bold text-[9px] ml-1.5 inline-block" title="Sorted Ascending">
+      <span className="text-plum-950 font-extrabold text-[9px] ml-1.5 inline-block" title="Sorted Ascending">
         ▲
       </span>
     ) : (
-      <span className="text-gold-dark font-bold text-[9px] ml-1.5 inline-block" title="Sorted Descending">
+      <span className="text-plum-950 font-extrabold text-[9px] ml-1.5 inline-block" title="Sorted Descending">
         ▼
       </span>
     );
@@ -765,7 +837,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
     contactPerson: '',
     phone: '',
     baseRate: '',
-    pendingBalance: ''
+    pendingBalance: '',
+    address: ''
   });
 
   const [newFeedback, setNewFeedback] = useState({
@@ -773,7 +846,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
     rating: 5,
     feedbackText: '',
     internalNotes: '',
-    eventDate: ''
+    eventDate: '',
+    showOnWebsite: true
   });
 
   const [newLedger, setNewLedger] = useState({
@@ -807,13 +881,43 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
   // Delete Action Handlers
   const handleDeleteCustomer = (id: string) => {
-    if (confirm("Are you sure you want to remove this client profile from the Unified Directory?")) {
+    const target = customers.find(c => c.id === id);
+    if (confirm(`Are you sure you want to remove client "${target?.fullName || ''}" from the Unified Directory?`)) {
+      if (target) {
+        const logEntry: ChangeLogEntry = {
+          id: 'hist-' + Date.now(),
+          timestamp: new Date().toLocaleString(),
+          type: 'Customer',
+          entityId: id,
+          entityName: target.fullName,
+          action: 'Deleted',
+          changes: [
+            { field: 'Client Profile', oldValue: target.fullName, newValue: 'Deleted/Archived' }
+          ]
+        };
+        setChangeHistory(prev => [logEntry, ...prev]);
+      }
       setCustomers(customers.filter(c => c.id !== id));
     }
   };
 
   const handleDeleteVendor = (id: string) => {
-    if (confirm("Are you sure you want to remove this partner supplier from the Event Vendor database?")) {
+    const target = vendors.find(v => v.id === id);
+    if (confirm(`Are you sure you want to remove partner supplier "${target?.companyName || ''}" from the Event Vendor database?`)) {
+      if (target) {
+        const logEntry: ChangeLogEntry = {
+          id: 'hist-' + Date.now(),
+          timestamp: new Date().toLocaleString(),
+          type: 'Vendor',
+          entityId: id,
+          entityName: target.companyName,
+          action: 'Deleted',
+          changes: [
+            { field: 'Vendor Supplier', oldValue: target.companyName, newValue: 'Deleted/Archived' }
+          ]
+        };
+        setChangeHistory(prev => [logEntry, ...prev]);
+      }
       setVendors(vendors.filter(v => v.id !== id));
     }
   };
@@ -822,6 +926,15 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
     if (confirm("Are you sure you want to delete this historical post-event review page?")) {
       setFeedbacks(feedbacks.filter(f => f.id !== id));
     }
+  };
+
+  const toggleFeedbackShowOnWebsite = (id: string) => {
+    setFeedbacks(prev => prev.map(f => {
+      if (f.id === id) {
+        return { ...f, showOnWebsite: !(f.showOnWebsite ?? true) };
+      }
+      return f;
+    }));
   };
 
   const handleDeleteLedger = (id: string) => {
@@ -846,6 +959,21 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       location: newCustomer.location,
       status: newCustomer.status
     };
+
+    // Add history entry
+    const logEntry: ChangeLogEntry = {
+      id: 'hist-' + Date.now(),
+      timestamp: new Date().toLocaleString(),
+      type: 'Customer',
+      entityId: created.id,
+      entityName: created.fullName,
+      action: 'Created',
+      changes: [
+        { field: 'Client Profile', oldValue: 'New Profile', newValue: `${created.fullName} created with status ${created.status}` }
+      ]
+    };
+    setChangeHistory(prev => [logEntry, ...prev]);
+
     setCustomers([created, ...customers]);
     setShowAddCustomerModal(false);
     // Reset state
@@ -872,8 +1000,24 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       contactPerson: newVendor.contactPerson,
       phone: newVendor.phone,
       baseRate: Number(newVendor.baseRate) || 0,
-      pendingBalance: Number(newVendor.pendingBalance) || 0
+      pendingBalance: Number(newVendor.pendingBalance) || 0,
+      address: newVendor.address || 'Karachi, Pakistan'
     };
+
+    // Add history entry
+    const logEntry: ChangeLogEntry = {
+      id: 'hist-' + Date.now(),
+      timestamp: new Date().toLocaleString(),
+      type: 'Vendor',
+      entityId: created.id,
+      entityName: created.companyName,
+      action: 'Created',
+      changes: [
+        { field: 'Vendor Supplier', oldValue: 'New Supplier', newValue: `${created.companyName} (${created.category}) onboarded` }
+      ]
+    };
+    setChangeHistory(prev => [logEntry, ...prev]);
+
     setVendors([created, ...vendors]);
     setShowAddVendorModal(false);
     setNewVendor({
@@ -882,8 +1026,111 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       contactPerson: '',
       phone: '',
       baseRate: '',
-      pendingBalance: ''
+      pendingBalance: '',
+      address: ''
     });
+  };
+
+  // Modify / Edit Submit Handlers with detailed history comparison
+  const handleEditCustomerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    if (!editingCustomer.fullName || !editingCustomer.phone || !editingCustomer.email) {
+      alert("Please complete the required fields (Full Name, Contact, Email).");
+      return;
+    }
+
+    const oldCustomer = customers.find(c => c.id === editingCustomer.id);
+    if (!oldCustomer) return;
+
+    // Detect Changes
+    const changes: { field: string; oldValue: string; newValue: string }[] = [];
+    if (oldCustomer.fullName !== editingCustomer.fullName) {
+      changes.push({ field: 'Full Name', oldValue: oldCustomer.fullName, newValue: editingCustomer.fullName });
+    }
+    if (oldCustomer.phone !== editingCustomer.phone) {
+      changes.push({ field: 'Phone Line', oldValue: oldCustomer.phone, newValue: editingCustomer.phone });
+    }
+    if (oldCustomer.email !== editingCustomer.email) {
+      changes.push({ field: 'Email Address', oldValue: oldCustomer.email, newValue: editingCustomer.email });
+    }
+    if (oldCustomer.targetDate !== editingCustomer.targetDate) {
+      changes.push({ field: 'Target Event Date', oldValue: oldCustomer.targetDate, newValue: editingCustomer.targetDate });
+    }
+    if (oldCustomer.location !== editingCustomer.location) {
+      changes.push({ field: 'DHA Location / Block', oldValue: oldCustomer.location, newValue: editingCustomer.location });
+    }
+    if (oldCustomer.status !== editingCustomer.status) {
+      changes.push({ field: 'Lifecycle Status', oldValue: oldCustomer.status, newValue: editingCustomer.status });
+    }
+
+    if (changes.length > 0) {
+      const logEntry: ChangeLogEntry = {
+        id: 'hist-' + Date.now(),
+        timestamp: new Date().toLocaleString(),
+        type: 'Customer',
+        entityId: oldCustomer.id,
+        entityName: editingCustomer.fullName,
+        action: 'Modified',
+        changes
+      };
+      setChangeHistory(prev => [logEntry, ...prev]);
+      setCustomers(customers.map(c => c.id === editingCustomer.id ? editingCustomer : c));
+    }
+
+    setEditingCustomer(null);
+  };
+
+  const handleEditVendorSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVendor) return;
+    if (!editingVendor.companyName || !editingVendor.contactPerson || !editingVendor.phone) {
+      alert("Please enter company name, contact, and phone number.");
+      return;
+    }
+
+    const oldVendor = vendors.find(v => v.id === editingVendor.id);
+    if (!oldVendor) return;
+
+    // Detect Changes
+    const changes: { field: string; oldValue: string; newValue: string }[] = [];
+    if (oldVendor.companyName !== editingVendor.companyName) {
+      changes.push({ field: 'Company Name', oldValue: oldVendor.companyName, newValue: editingVendor.companyName });
+    }
+    if (oldVendor.category !== editingVendor.category) {
+      changes.push({ field: 'Category / Sector', oldValue: oldVendor.category, newValue: editingVendor.category });
+    }
+    if (oldVendor.contactPerson !== editingVendor.contactPerson) {
+      changes.push({ field: 'Point of Contact', oldValue: oldVendor.contactPerson, newValue: editingVendor.contactPerson });
+    }
+    if (oldVendor.phone !== editingVendor.phone) {
+      changes.push({ field: 'Phone Line', oldValue: oldVendor.phone, newValue: editingVendor.phone });
+    }
+    if (oldVendor.baseRate !== editingVendor.baseRate) {
+      changes.push({ field: 'Supplier Base Rate', oldValue: `₨ ${oldVendor.baseRate.toLocaleString()}`, newValue: `₨ ${editingVendor.baseRate.toLocaleString()}` });
+    }
+    if (oldVendor.pendingBalance !== editingVendor.pendingBalance) {
+      changes.push({ field: 'Pending Balance', oldValue: `₨ ${oldVendor.pendingBalance.toLocaleString()}`, newValue: `₨ ${editingVendor.pendingBalance.toLocaleString()}` });
+    }
+    if (oldVendor.address !== editingVendor.address) {
+      changes.push({ field: 'Office Address', oldValue: oldVendor.address || 'N/A', newValue: editingVendor.address || 'N/A' });
+    }
+
+    if (changes.length > 0) {
+      const logEntry: ChangeLogEntry = {
+        id: 'hist-' + Date.now(),
+        timestamp: new Date().toLocaleString(),
+        type: 'Vendor',
+        entityId: oldVendor.id,
+        entityName: editingVendor.companyName,
+        action: 'Modified',
+        changes
+      };
+      setChangeHistory(prev => [logEntry, ...prev]);
+      setVendors(vendors.map(v => v.id === editingVendor.id ? editingVendor : v));
+    }
+
+    setEditingVendor(null);
   };
 
   const handleAddFeedbackSubmit = (e: React.FormEvent) => {
@@ -898,7 +1145,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       rating: Number(newFeedback.rating),
       feedbackText: newFeedback.feedbackText,
       internalNotes: newFeedback.internalNotes || "No logistical anomalies logged. Smooth execution.",
-      eventDate: newFeedback.eventDate || new Date().toISOString().split('T')[0]
+      eventDate: newFeedback.eventDate || new Date().toISOString().split('T')[0],
+      showOnWebsite: newFeedback.showOnWebsite
     };
     setFeedbacks([created, ...feedbacks]);
     setShowAddFeedbackModal(false);
@@ -907,7 +1155,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       rating: 5,
       feedbackText: '',
       internalNotes: '',
-      eventDate: ''
+      eventDate: '',
+      showOnWebsite: true
     });
   };
 
@@ -1011,12 +1260,13 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       const matchColCategory = vendColFilterCategory === 'All' || v.category === vendColFilterCategory;
       const matchColContact = vendColFilterContact === '' || v.contactPerson.toLowerCase().includes(vendColFilterContact.toLowerCase());
       const matchColPhone = vendColFilterPhone === '' || v.phone.includes(vendColFilterPhone);
+      const matchColAddress = vendColFilterAddress === '' || (v.address || '').toLowerCase().includes(vendColFilterAddress.toLowerCase());
       const matchColBaseRate = vendColFilterBaseRate === '' || v.baseRate.toString().includes(vendColFilterBaseRate);
       const matchColBalance = vendColFilterBalance === '' || v.pendingBalance.toString().includes(vendColFilterBalance);
 
       const matchCat = vendorCategoryFilter === 'All' || v.category === vendorCategoryFilter;
 
-      return matchSearch && matchColCompany && matchColCategory && matchColContact && matchColPhone && matchColBaseRate && matchColBalance && matchCat;
+      return matchSearch && matchColCompany && matchColCategory && matchColContact && matchColPhone && matchColAddress && matchColBaseRate && matchColBalance && matchCat;
     }).sort((a, b) => {
       if (!vendSortField) return 0;
       let valA: any = '';
@@ -1034,6 +1284,9 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       } else if (vendSortField === 'phone') {
         valA = a.phone;
         valB = b.phone;
+      } else if (vendSortField === 'address') {
+        valA = (a.address || '').toLowerCase();
+        valB = (b.address || '').toLowerCase();
       } else if (vendSortField === 'baseRate') {
         valA = a.baseRate;
         valB = b.baseRate;
@@ -1046,12 +1299,17 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       if (valA > valB) return vendSortAsc ? 1 : -1;
       return 0;
     });
-  }, [vendors, vendSearchTerm, searchTerm, vendColFilterCompany, vendColFilterCategory, vendColFilterContact, vendColFilterPhone, vendColFilterBaseRate, vendColFilterBalance, vendorCategoryFilter, vendSortField, vendSortAsc]);
+  }, [vendors, vendSearchTerm, searchTerm, vendColFilterCompany, vendColFilterCategory, vendColFilterContact, vendColFilterPhone, vendColFilterAddress, vendColFilterBaseRate, vendColFilterBalance, vendorCategoryFilter, vendSortField, vendSortAsc]);
 
   const paginatedVendors = useMemo(() => {
     const startIdx = (vendPage - 1) * vendPageSize;
     return filteredVendors.slice(startIdx, startIdx + vendPageSize);
   }, [filteredVendors, vendPage, vendPageSize]);
+
+  const paginatedFeedbacks = useMemo(() => {
+    const startIdx = (feedPage - 1) * feedPageSize;
+    return feedbacks.slice(startIdx, startIdx + feedPageSize);
+  }, [feedbacks, feedPage, feedPageSize]);
 
   // Financial Ledger Computed Math & Filter
   const activeYearLedger = useMemo(() => {
@@ -1173,7 +1431,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   // Access Page if Not Authenticated
   if (!isAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 bg-plum-950 flex items-center justify-center p-6 bg-cover bg-center overflow-y-auto" style={{ backgroundImage: "linear-gradient(rgba(19, 3, 21, 0.95), rgba(19, 3, 21, 0.95))" }}>
+      <div className="fixed inset-0 z-50 bg-plum-950 flex items-center justify-center p-6 bg-cover bg-center overflow-hidden" style={{ backgroundImage: "linear-gradient(rgba(19, 3, 21, 0.95), rgba(19, 3, 21, 0.95))" }}>
         <motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1256,10 +1514,10 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           <button 
             type="button"
             onClick={handleLogout}
-            className="bg-[#2D0D35] border border-purple-500/40 text-purple-300 hover:bg-purple-600 hover:border-purple-400 hover:text-white transition duration-300 p-2 sm:p-2.5 rounded-full text-xs flex items-center justify-center shadow-lg"
+            className="bg-gold-accent/10 border border-gold-accent/30 text-gold-accent p-2 sm:p-2.5 rounded-full text-xs flex items-center justify-center shadow-lg"
             title="Lock Portal"
           >
-            <Power className="w-4.5 h-4.5" />
+            <Power className="w-4.5 h-4.5 text-gold-accent" />
           </button>
         </div>
       </header>
@@ -1267,7 +1525,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       {/* ADMIN LEVEL SUB NAV */}
       <div className="bg-[#1b031f] border-b border-gold-dark/15 px-6 py-3 flex flex-wrap gap-4 items-center justify-between shrink-0">
         <div className="flex flex-wrap gap-2">
-          {(['Directory', 'Feedback', 'Financial Ledger', 'Notifications', 'Website Customizer'] as const).map((tab) => (
+          {(['Directory', 'Feedback', 'Financial Ledger', 'Notifications', 'Change History', 'Website Customizer'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1279,6 +1537,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
             >
               {tab === 'Notifications' && <Bell className="w-3.5 h-3.5" />}
               {tab === 'Website Customizer' && <Settings className="w-3.5 h-3.5" />}
+              {tab === 'Change History' && <History className="w-3.5 h-3.5" />}
               {tab}
               {tab === 'Notifications' && unreadNotifCount > 0 && (
                 <span className="bg-red-500 text-white font-mono text-[10px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold animate-pulse leading-none">
@@ -1305,16 +1564,16 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setDirectoryType('Customers'); setSearchTerm(''); }}
-                  className={`px-4 py-2 text-xs uppercase tracking-widest font-medium border rounded transition ${
-                    directoryType === 'Customers' ? 'bg-white text-plum-950 border-white' : 'border-gold-accent/20 text-gold-accent hover:bg-plum-900/30'
+                  className={`px-4 py-2 text-xs uppercase tracking-widest font-semibold border rounded transition duration-300 ${
+                    directoryType === 'Customers' ? 'bg-gold-accent text-plum-950 border-gold-accent shadow-md' : 'bg-plum-950 border-gold-accent/20 text-gold-accent hover:bg-plum-900/40'
                   }`}
                 >
                   Client Database
                 </button>
                 <button
                   onClick={() => { setDirectoryType('Vendors'); setSearchTerm(''); }}
-                  className={`px-4 py-2 text-xs uppercase tracking-widest font-medium border rounded transition ${
-                    directoryType === 'Vendors' ? 'bg-white text-plum-950 border-white' : 'border-gold-accent/20 text-gold-accent hover:bg-plum-900/30'
+                  className={`px-4 py-2 text-xs uppercase tracking-widest font-semibold border rounded transition duration-300 ${
+                    directoryType === 'Vendors' ? 'bg-gold-accent text-plum-950 border-gold-accent shadow-md' : 'bg-plum-950 border-gold-accent/20 text-gold-accent hover:bg-plum-900/40'
                   }`}
                 >
                   Event Vendors
@@ -1357,9 +1616,12 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       className="bg-plum-900/50 border border-gold-dark/20 text-[11px] rounded px-2.5 py-2 text-gold-accent font-sans focus:outline-none"
                     >
                       <option value="All">All Sectors</option>
-                      <option value="Catering">Catering</option>
-                      <option value="Decorators">Decorators</option>
-                      <option value="Sound/DJ Music">Sound/DJ Music</option>
+                      <option value="Catering">Catering (Catters)</option>
+                      <option value="Decorators">Decorators (decorer)</option>
+                      <option value="Music system">Music system</option>
+                      <option value="Sea sports">Sea sports</option>
+                      <option value="Printings">Printings</option>
+                      <option value="flowers">flowers</option>
                       <option value="Photography">Photography</option>
                       <option value="Bid Boxes & Giveaways">Bid Boxes & Giveaways</option>
                     </select>
@@ -1368,23 +1630,25 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
                 <button
                   onClick={() => directoryType === 'Customers' ? setShowAddCustomerModal(true) : setShowAddVendorModal(true)}
-                  className="bg-gold-accent hover:bg-gold-light text-plum-950 font-semibold px-4 py-2 rounded text-xs uppercase tracking-widest flex items-center gap-1.5 transition duration-300"
+                  className="bg-gold-accent hover:bg-gold-light text-plum-950 p-2.5 rounded h-[34px] w-[34px] flex items-center justify-center transition duration-300 shrink-0 shadow-md"
+                  title={`Add ${directoryType === 'Customers' ? 'Customer' : 'Vendor'}`}
+                  aria-label={`Add ${directoryType === 'Customers' ? 'Customer' : 'Vendor'}`}
                 >
-                  <Plus className="w-3.5 h-3.5 text-plum-950 stroke-[3]" /> Add {directoryType === 'Customers' ? 'Customer' : 'Vendor'}
+                  <Plus className="w-4 h-4 text-plum-950 stroke-[3]" />
                 </button>
               </div>
             </div>
 
-            {/* DATABASE VIEWER CARDS / CRISP WHITE BACKGROUND CARDS */}
+            {/* DATABASE VIEWER CARDS / CRISP DARK BACKGROUND CARDS */}
             {directoryType === 'Customers' ? (
-              <div className="bg-white text-plum-950 rounded-xl shadow-xl overflow-hidden border border-gold-dark/15">
-                <div className="p-4 bg-gold-accent/15 border-b border-gold-dark/10 flex justify-between items-center">
-                  <span className="font-serif text-sm font-semibold text-plum-900 uppercase tracking-widest">Active Clientele Register</span>
-                  <span className="text-[10px] font-mono text-plum-900/60">Total: {filteredCustomers.length} Records</span>
+              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20">
+                <div className="p-4 bg-plum-950 border-b border-gold-dark/15 flex justify-between items-center">
+                  <span className="font-serif text-sm font-semibold text-gold-accent uppercase tracking-widest">Active Clientele Register</span>
+                  <span className="text-[10px] font-mono text-champagne-light/50">Total: {filteredCustomers.length} Records</span>
                 </div>
                 
                 {filteredCustomers.length === 0 && paginatedCustomers.length === 0 ? (
-                  <div className="py-16 text-center text-plum-950/50 italic text-sm">
+                  <div className="py-16 text-center text-champagne-light/30 italic text-sm">
                     No client entries found matching the filter query.
                   </div>
                 ) : (
@@ -1393,67 +1657,67 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           {/* Column Sorting Row */}
-                          <tr className="bg-plum-950/5 border-b border-plum-950/10 text-plum-950/80 uppercase tracking-wider font-mono text-[9px]">
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleCustSort('fullName')}>
-                              <span className="flex items-center gap-1">Full Name {renderSortArrow('fullName', custSortField, custSortAsc)}</span>
+                          <tr className="bg-gold-light/90 border-b border-gold-dark/20 text-plum-950 uppercase tracking-wider font-mono text-[9px] font-bold">
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Full Name</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleCustSort('contact')}>
-                              <span className="flex items-center gap-1">Contact Detail {renderSortArrow('contact', custSortField, custSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Contact Detail</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleCustSort('targetDate')}>
-                              <span className="flex items-center gap-1">Target Event Date {renderSortArrow('targetDate', custSortField, custSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Target Event Date</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleCustSort('location')}>
-                              <span className="flex items-center gap-1">DHA Location / Block {renderSortArrow('location', custSortField, custSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">DHA Location / Block</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleCustSort('status')}>
-                              <span className="flex items-center gap-1">Lifecycle Status {renderSortArrow('status', custSortField, custSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Lifecycle Status</span>
                             </th>
-                            <th className="py-3 px-4 text-right">Actions</th>
+                            <th className="py-3 px-4 text-right px-6">Actions</th>
                           </tr>
                           {/* Column Filtering Row */}
-                          <tr className="bg-plum-950/5 border-b border-plum-950/10">
-                            <th className="py-1 px-2">
+                          <tr className="bg-plum-950/60 border-b border-gold-accent/10">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Filter name..."
                                 value={custColFilterName}
                                 onChange={(e) => { setCustColFilterName(e.target.value); setCustPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Filter contact..."
                                 value={custColFilterContact}
                                 onChange={(e) => { setCustColFilterContact(e.target.value); setCustPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Filter date..."
                                 value={custColFilterDate}
                                 onChange={(e) => { setCustColFilterDate(e.target.value); setCustPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Filter location..."
                                 value={custColFilterLocation}
                                 onChange={(e) => { setCustColFilterLocation(e.target.value); setCustPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <select 
                                 value={custColFilterStatus}
                                 onChange={(e) => { setCustColFilterStatus(e.target.value); setCustPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-1.5 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white border border-gold-accent/20 rounded px-1.5 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               >
                                 <option value="All">All</option>
                                 <option value="Served">Served</option>
@@ -1464,17 +1728,17 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                             <th className="py-1 px-2"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-plum-950/5 font-sans font-medium text-plum-900">
-                          {paginatedCustomers.map(c => (
-                            <tr key={c.id} className="hover:bg-plum-50/50 transition">
-                              <td className="py-3.5 px-4 font-serif text-sm font-bold block-td">{c.fullName}</td>
+                        <tbody className="divide-y divide-gold-accent/10 font-sans font-medium text-champagne-light/90">
+                          {paginatedCustomers.map((c, idx) => (
+                            <tr key={c.id} className={`${idx % 2 === 0 ? 'bg-plum-950/40' : 'bg-plum-900/30'} hover:bg-plum-900/60 transition-colors`}>
+                              <td className="py-3.5 px-4 font-serif text-sm font-bold text-gold-light block-td">{c.fullName}</td>
                               <td className="py-3.5 px-4">
                                 <div className="space-y-0.5">
-                                  <span className="block font-semibold">{c.phone}</span>
-                                  <span className="block text-[10px] text-plum-950/60 leading-none">{c.email}</span>
+                                  <span className="block font-semibold text-white">{c.phone}</span>
+                                  <span className="block text-[10px] text-champagne-light/60 leading-none">{c.email}</span>
                                 </div>
                               </td>
-                              <td className="py-3.5 px-4 font-mono text-[11px]">{c.targetDate}</td>
+                              <td className="py-3.5 px-4 font-mono text-[11px] text-champagne-dark">{c.targetDate}</td>
                               <td className="py-3.5 px-4">
                                 <div className="flex items-center gap-1.5">
                                   <MapPin className="w-3.5 h-3.5 text-gold-accent shrink-0" />
@@ -1484,19 +1748,27 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                               <td className="py-3.5 px-4">
                                 <span className={`inline-block px-2.5 py-1 text-[9px] uppercase font-mono tracking-wider text-nowrap rounded font-bold border ${
                                   c.status === 'Served' 
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
                                     : c.status === 'Potential' 
-                                    ? 'bg-amber-50 text-amber-800 border-amber-200' 
-                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' 
+                                    : 'bg-slate-500/10 text-slate-300 border-slate-500/20'
                                 }`}>
                                   {c.status}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-right">
+                              <td className="py-3.5 px-4 text-right px-6">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCustomer(c)}
+                                  className="text-gold-accent hover:text-gold-light hover:bg-gold-accent/10 p-1.5 rounded transition inline-block mr-1.5"
+                                  title="Edit Profile"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteCustomer(c.id)}
-                                  className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-1.5 rounded transition inline-block"
+                                  className="text-red-400 hover:text-red-350 hover:bg-red-500/10 p-1.5 rounded transition inline-block"
                                   title="Remove Profile"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1513,14 +1785,14 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                 )}
               </div>
             ) : (
-              <div className="bg-white text-plum-950 rounded-xl shadow-xl overflow-hidden border border-gold-dark/15">
-                <div className="p-4 bg-gold-accent/15 border-b border-gold-dark/10 flex justify-between items-center">
-                  <span className="font-serif text-sm font-semibold text-plum-900 uppercase tracking-widest">Aura Partner Suppliers & Vendors</span>
-                  <span className="text-[10px] font-mono text-plum-900/60">Total: {filteredVendors.length} Suppliers</span>
+              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20">
+                <div className="p-4 bg-plum-950 border-b border-gold-dark/15 flex justify-between items-center">
+                  <span className="font-serif text-sm font-semibold text-gold-accent uppercase tracking-widest">Aura Partner Suppliers & Vendors</span>
+                  <span className="text-[10px] font-mono text-champagne-light/50">Total: {filteredVendors.length} Suppliers</span>
                 </div>
 
                 {filteredVendors.length === 0 && paginatedVendors.length === 0 ? (
-                  <div className="py-16 text-center text-plum-950/50 italic text-sm">
+                  <div className="py-16 text-center text-champagne-light/30 italic text-sm">
                     No vendor listings found matching search categories.
                   </div>
                 ) : (
@@ -1529,98 +1801,119 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           {/* Column Sorting Row */}
-                          <tr className="bg-plum-950/5 border-b border-plum-950/10 text-plum-950/80 uppercase tracking-wider font-mono text-[9px]">
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleVendSort('companyName')}>
-                              <span className="flex items-center gap-1">Company & Sector {renderSortArrow('companyName', vendSortField, vendSortAsc)}</span>
+                          <tr className="bg-gold-light/90 border-b border-gold-dark/20 text-plum-950 uppercase tracking-wider font-mono text-[9px] font-bold">
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Company & Sector</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleVendSort('contactPerson')}>
-                              <span className="flex items-center gap-1">Point of Contact {renderSortArrow('contactPerson', vendSortField, vendSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Point of Contact</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleVendSort('phone')}>
-                              <span className="flex items-center gap-1">Phone Line {renderSortArrow('phone', vendSortField, vendSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Phone Line</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleVendSort('baseRate')}>
-                              <span className="flex items-center gap-1">Supplier Base Rates {renderSortArrow('baseRate', vendSortField, vendSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Address</span>
                             </th>
-                            <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition" onClick={() => handleVendSort('pendingBalance')}>
-                              <span className="flex items-center gap-1">Pending Outstanding Balance {renderSortArrow('pendingBalance', vendSortField, vendSortAsc)}</span>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Supplier Base Rates</span>
                             </th>
-                            <th className="py-3 px-4 text-right">Actions</th>
+                            <th className="py-3 px-4 select-none">
+                              <span className="flex items-center gap-1">Pending Outstanding Balance</span>
+                            </th>
+                            <th className="py-3 px-4 text-right px-6">Actions</th>
                           </tr>
                           {/* Column Filtering Row */}
-                          <tr className="bg-plum-950/5 border-b border-plum-950/10">
-                            <th className="py-1 px-2">
+                          <tr className="bg-plum-950/60 border-b border-gold-accent/10">
+                            <th className="py-1.5 px-2">
                               <div className="flex gap-1 flex-col">
                                 <input 
                                   type="text"
                                   placeholder="Company..."
                                   value={vendColFilterCompany}
                                   onChange={(e) => { setVendColFilterCompany(e.target.value); setVendPage(1); }}
-                                  className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                  className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                                 />
                               </div>
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Contact..."
                                 value={vendColFilterContact}
                                 onChange={(e) => { setVendColFilterContact(e.target.value); setVendPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Phone..."
                                 value={vendColFilterPhone}
                                 onChange={(e) => { setVendColFilterPhone(e.target.value); setVendPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
+                              <input 
+                                type="text"
+                                placeholder="Address..."
+                                value={vendColFilterAddress}
+                                onChange={(e) => { setVendColFilterAddress(e.target.value); setVendPage(1); }}
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
+                              />
+                            </th>
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Base rate..."
                                 value={vendColFilterBaseRate}
                                 onChange={(e) => { setVendColFilterBaseRate(e.target.value); setVendPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
-                            <th className="py-1 px-2">
+                            <th className="py-1.5 px-2">
                               <input 
                                 type="text"
                                 placeholder="Balance..."
                                 value={vendColFilterBalance}
                                 onChange={(e) => { setVendColFilterBalance(e.target.value); setVendPage(1); }}
-                                className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                                className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/20"
                               />
                             </th>
                             <th className="py-1 px-2"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-plum-950/5 font-sans font-medium text-plum-900">
-                          {paginatedVendors.map(v => (
-                            <tr key={v.id} className="hover:bg-plum-50/50 transition">
-                              <td className="py-3.5 px-4">
+                        <tbody className="divide-y divide-gold-accent/10 font-sans font-medium text-champagne-light/90">
+                          {paginatedVendors.map((v, idx) => (
+                            <tr key={v.id} className={`${idx % 2 === 0 ? 'bg-plum-950/40' : 'bg-plum-900/30'} hover:bg-plum-900/60 transition-colors`}>
+                              <td className="py-3.5 px-4 font-sans">
                                 <div>
-                                  <span className="font-serif text-sm font-bold text-plum-950 block">{v.companyName}</span>
-                                  <span className="inline-block text-[10px] px-2 py-0.5 mt-1 bg-plum-950/5 text-plum-950/70 border border-plum-950/10 rounded font-mono uppercase">{v.category}</span>
+                                  <span className="font-serif text-sm font-bold text-gold-light block">{v.companyName}</span>
+                                  <span className="inline-block text-[10px] px-2 py-0.5 mt-1 bg-gold-accent/10 text-gold-accent border border-gold-accent/20 rounded font-mono uppercase">{v.category}</span>
                                 </div>
                               </td>
-                              <td className="py-3.5 px-4">{v.contactPerson}</td>
-                              <td className="py-3.5 px-4 font-mono">{v.phone}</td>
-                              <td className="py-3.5 px-4 font-bold text-plum-950">₨ {v.baseRate.toLocaleString()}</td>
+                              <td className="py-3.5 px-4 text-white font-medium">{v.contactPerson}</td>
+                              <td className="py-3.5 px-4 font-mono text-champagne-light/80">{v.phone}</td>
+                              <td className="py-3.5 px-4 text-xs font-normal text-champagne-light/70">{v.address || 'Karachi, Pakistan'}</td>
+                              <td className="py-3.5 px-4 font-bold text-gold-accent">₨ {v.baseRate.toLocaleString()}</td>
                               <td className="py-3.5 px-4">
-                                <span className={`font-bold px-2 py-1 rounded font-mono ${v.pendingBalance > 0 ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-emerald-800 bg-emerald-50 border border-emerald-200'}`}>
+                                <span className={`font-bold px-2 py-1 rounded font-mono border ${v.pendingBalance > 0 ? 'text-amber-300 bg-amber-500/10 border-amber-500/20' : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'}`}>
                                   ₨ {v.pendingBalance.toLocaleString()}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-right">
+                              <td className="py-3.5 px-4 text-right px-6">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingVendor(v)}
+                                  className="text-gold-accent hover:text-gold-light hover:bg-gold-accent/10 p-1.5 rounded transition inline-block mr-1.5"
+                                  title="Edit Vendor"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteVendor(v.id)}
-                                  className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-1.5 rounded transition inline-block"
+                                  className="text-red-400 hover:text-red-350 hover:bg-red-500/10 p-1.5 rounded transition inline-block"
                                   title="Remove Vendor"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1658,47 +1951,69 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
             {/* FEEDBACK FEED GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {feedbacks.map(item => (
-                <div key={item.id} className="bg-white text-plum-950 rounded-xl shadow-xl overflow-hidden border border-gold-dark/15 flex flex-col justify-between">
+              {paginatedFeedbacks.map(item => (
+                <div key={item.id} className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20 flex flex-col justify-between">
                   {/* Card Main Info */}
                   <div className="p-6 space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-serif text-base font-bold text-plum-950">{item.customerName}</h4>
-                        <span className="text-[10px] uppercase font-mono text-plum-950/50 block mt-0.5">Event Execution: {item.eventDate}</span>
+                        <h4 className="font-serif text-base font-bold text-gold-accent">{item.customerName}</h4>
+                        <span className="text-[10px] uppercase font-mono text-champagne-light/60 block mt-0.5">Event Execution: {item.eventDate}</span>
                       </div>
                       <div className="text-right">
                         {renderStars(item.rating)}
-                        <span className="text-[10px] font-mono text-gold-dark font-bold uppercase tracking-wider block mt-1">CLIENT RATING</span>
+                        <span className="text-[10px] font-mono text-gold-light font-bold uppercase tracking-wider block mt-1">CLIENT RATING</span>
                       </div>
                     </div>
 
                     {/* Client Testimonial */}
-                    <div className="space-y-1.5 bg-plum-50 p-3.5 rounded border border-plum-950/5 italic text-xs leading-relaxed text-slate-700">
-                      <span className="text-[9px] uppercase tracking-wider text-plum-950/65 font-bold block not-italic">Client Statement:</span>
+                    <div className="space-y-1.5 bg-plum-950/70 p-3.5 rounded border border-gold-accent/15 italic text-xs leading-relaxed text-champagne-medium/90">
+                      <span className="text-[9px] uppercase tracking-wider text-champagne-dark font-bold block not-italic">Client Statement:</span>
                       "{item.feedbackText}"
                     </div>
 
                     {/* Internal Notes */}
-                    <div className="space-y-1.5 bg-amber-50/50 p-3.5 rounded border border-amber-200/50 text-xs leading-relaxed text-slate-800">
-                      <span className="text-[9px] uppercase tracking-wider text-amber-900 font-bold block">Planner Log (Internal Observations):</span>
+                    <div className="space-y-1.5 bg-plum-900/45 p-3.5 rounded border border-gold-dark/15 text-xs leading-relaxed text-amber-250">
+                      <span className="text-[9px] uppercase tracking-wider text-gold-accent font-bold block">Planner Log (Internal Observations):</span>
                       {item.internalNotes}
                     </div>
                   </div>
 
                   {/* Foot action bar */}
-                  <div className="px-6 py-3.5 bg-plum-950/5 border-t border-plum-950/10 flex justify-between items-center text-[10px]">
-                    <span className="text-plum-950/50 uppercase font-mono">ID: {item.id}</span>
+                  <div className="px-6 py-3.5 bg-plum-950 border-t border-gold-dark/20 flex flex-wrap justify-between items-center text-[10px] gap-3">
                     <button
-                      onClick={() => handleDeleteFeedback(item.id)}
-                      className="text-red-500 hover:text-red-800 flex items-center gap-1 font-mono uppercase font-bold"
+                      type="button"
+                      onClick={() => toggleFeedbackShowOnWebsite(item.id)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition border font-bold uppercase text-[9px] tracking-wider ${
+                        item.showOnWebsite !== false
+                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                          : 'bg-[#140514] text-champagne-dark/50 border-gold-dark/20'
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> Delete Review
+                      <span className={`w-1.5 h-1.5 rounded-full ${item.showOnWebsite !== false ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                      {item.showOnWebsite !== false ? 'Shown on Website' : 'Hidden on Website'}
                     </button>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-champagne-light/55 uppercase font-mono">ID: {item.id}</span>
+                      <button
+                        onClick={() => handleDeleteFeedback(item.id)}
+                        className="text-red-400 hover:text-red-350 flex items-center gap-1 font-mono uppercase font-bold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {feedbacks.length > feedPageSize && (
+              <div className="bg-plum-950 rounded-xl shadow-md overflow-hidden border border-gold-dark/20 mt-4">
+                {renderPagination(feedPage, feedPageSize, feedbacks.length, setFeedPage)}
+              </div>
+            )}
           </div>
         )}
 
@@ -1713,7 +2028,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="bg-white text-plum-950 font-serif font-bold text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-gold-accent"
+                  className="bg-plum-900 border border-gold-accent/20 text-gold-accent font-serif font-bold text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-gold-accent"
                 >
                   <option value={2024}>2024</option>
                   <option value={2025}>2025</option>
@@ -1733,38 +2048,38 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               {/* Gross Client Booking / Revenues */}
-              <div className="bg-white text-plum-950 rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
-                <div className="absolute right-4 top-4 text-emerald-100 bg-emerald-50 w-10 h-10 rounded-full flex items-center justify-center border border-emerald-200">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
+                <div className="absolute right-4 top-4 text-emerald-300 bg-emerald-500/10 w-10 h-10 rounded-full flex items-center justify-center border border-emerald-500/20">
+                  <TrendingUp className="w-5 h-5 text-emerald-450" />
                 </div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-plum-950/60 block font-bold">Gross Booking Cashflow</span>
-                <div className="text-2xl font-serif text-emerald-800 font-extrabold mt-2">₨ {financialCalculations.grossRevenue.toLocaleString()}</div>
-                <p className="text-[10.5px] text-plum-950/40 italic font-medium mt-1">Combined booking revenues logged in {selectedYear}</p>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-champagne-light/60 block font-bold">Gross Booking Cashflow</span>
+                <div className="text-2xl font-serif text-emerald-400 font-extrabold mt-2">₨ {financialCalculations.grossRevenue.toLocaleString()}</div>
+                <p className="text-[10.5px] text-champagne-light/50 italic font-medium mt-1">Combined booking revenues logged in {selectedYear}</p>
               </div>
 
               {/* Total combined expenses */}
-              <div className="bg-white text-plum-950 rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
-                <div className="absolute right-4 top-4 text-rose-100 bg-rose-50 w-10 h-10 rounded-full flex items-center justify-center border border-rose-200">
-                  <TrendingDown className="w-5 h-5 text-rose-600" />
+              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
+                <div className="absolute right-4 top-4 text-rose-300 bg-rose-500/10 w-10 h-10 rounded-full flex items-center justify-center border border-rose-500/20">
+                  <TrendingDown className="w-5 h-5 text-rose-450" />
                 </div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-plum-950/60 block font-bold">Total Combined Outflows</span>
-                <div className="text-2xl font-serif text-rose-800 font-extrabold mt-2">₨ {financialCalculations.totalExpenses.toLocaleString()}</div>
-                <p className="text-[10.5px] text-plum-950/40 italic font-medium mt-1">Aggregated payroll, OpEx & supplier expenses</p>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-champagne-light/60 block font-bold">Total Combined Outflows</span>
+                <div className="text-2xl font-serif text-rose-400 font-extrabold mt-2">₨ {financialCalculations.totalExpenses.toLocaleString()}</div>
+                <p className="text-[10.5px] text-champagne-light/50 italic font-medium mt-1">Aggregated payroll, OpEx & supplier expenses</p>
               </div>
 
               {/* Net profits or losses */}
-              <div className="bg-white text-plum-950 rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
+              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
                 <div className="absolute right-4 top-4 text-gold-accent/20 bg-gold-accent/5 w-10 h-10 rounded-full flex items-center justify-center border border-gold-accent/30">
                   <Award className="w-5 h-5 text-gold-accent" />
                 </div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-plum-950/60 block font-bold">Net Fiscal Performance</span>
-                <div className={`text-2xl font-serif font-extrabold mt-2 ${financialCalculations.isProfit ? 'text-emerald-800' : 'text-rose-800'}`}>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-champagne-light/60 block font-bold">Net Fiscal Performance</span>
+                <div className={`text-2xl font-serif font-extrabold mt-2 ${financialCalculations.isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {financialCalculations.isProfit ? '₨ +' : '₨ -'} {financialCalculations.netAmount.toLocaleString()}
                 </div>
                 <span className={`inline-block text-[9px] font-mono font-bold px-2 py-0.5 mt-2 rounded border uppercase ${
                   financialCalculations.isProfit 
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-                    : 'bg-rose-50 text-rose-800 border-rose-200'
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
+                    : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
                 }`}>
                   {financialCalculations.isProfit ? 'Net Annual Profit' : 'Deficit / Loss Reserve'}
                 </span>
@@ -1772,28 +2087,28 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
             </div>
 
             {/* DYNAMIC PROGRESS CASHFLOW METRIC PANEL */}
-            <div className="bg-white text-plum-950 p-6 rounded-xl shadow-lg border border-gold-dark/15 space-y-4">
+            <div className="bg-[#1b031f]/95 text-white p-6 rounded-xl shadow-lg border border-gold-dark/20 space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                  <h3 className="font-serif text-base font-bold text-plum-950">Visual Cashflow Margin Metre (FY {selectedYear})</h3>
-                  <p className="text-[11px] text-plum-950/60 font-sans">Illustrates the ratio of combined expenses vs. net profit margins relative to total revenues</p>
+                  <h3 className="font-serif text-base font-bold text-gold-accent">Visual Cashflow Margin Metre (FY {selectedYear})</h3>
+                  <p className="text-[11px] text-champagne-light/60 font-sans">Illustrates the ratio of combined expenses vs. net profit margins relative to total revenues</p>
                 </div>
                 {financialCalculations.grossRevenue > 0 && (
                   <div className="text-right flex gap-4 text-xs font-mono font-bold">
-                    <div className="text-rose-700">Expense: {financialCalculations.expenseRatio}%</div>
-                    <div className="text-emerald-700">Net Profit: {financialCalculations.profitRatio}%</div>
+                    <div className="text-rose-400">Expense: {financialCalculations.expenseRatio}%</div>
+                    <div className="text-emerald-400">Net Profit: {financialCalculations.profitRatio}%</div>
                   </div>
                 )}
               </div>
 
               {financialCalculations.grossRevenue === 0 ? (
-                <div className="bg-plum-50 py-6 text-center italic text-xs text-plum-900 rounded">
+                <div className="bg-plum-950 py-6 text-center italic text-xs text-champagne-light/40 border border-gold-dark/15 rounded">
                   No active client bookings logged under Year {selectedYear}. Log revenues to activate margins metric tracker.
                 </div>
               ) : (
                 <div className="space-y-2">
                   {/* Dynamic split progress slider bar */}
-                  <div className="h-6 w-full rounded-lg overflow-hidden flex shadow-inner border border-plum-950/15">
+                  <div className="h-6 w-full rounded-lg overflow-hidden flex shadow-inner border border-gold-accent/15">
                     {/* Expense bar */}
                     <div 
                       style={{ width: `${financialCalculations.expenseRatio}%` }}
@@ -1809,7 +2124,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       {100 - financialCalculations.expenseRatio > 10 ? `${100 - financialCalculations.expenseRatio}% Net Profit` : ''}
                     </div>
                   </div>
-                  <div className="flex justify-between text-[10px] text-plum-950/50 font-mono">
+                  <div className="flex justify-between text-[10px] text-champagne-light/50 font-mono">
                     <span>Total Expense: ₨ {financialCalculations.totalExpenses.toLocaleString()}</span>
                     <span>Net Profit: ₨ {(financialCalculations.grossRevenue - financialCalculations.totalExpenses).toLocaleString()}</span>
                   </div>
@@ -1817,58 +2132,58 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               )}
 
               {/* EXPENSE CATEGORY BREAKDOWN PILLS */}
-              <div className="border-t border-plum-950/10 pt-4">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-plum-950/65 block font-bold mb-3">Outflow Sectors Allocation:</span>
+              <div className="border-t border-gold-accent/10 pt-4">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-champagne-dark block font-bold mb-3">Outflow Sectors Allocation:</span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <div className="bg-plum-50 p-2.5 rounded border border-plum-950/5">
-                    <span className="text-[9px] font-mono text-plum-950/50 block font-bold leading-none uppercase">Employee Salaries</span>
-                    <span className="block text-xs font-bold text-plum-950 font-mono mt-1.5">₨ {financialCalculations.salaries.toLocaleString()}</span>
+                  <div className="bg-plum-950/70 p-2.5 rounded border border-gold-accent/10">
+                    <span className="text-[9px] font-mono text-champagne-light/50 block font-bold leading-none uppercase">Employee Salaries</span>
+                    <span className="block text-xs font-bold text-gold-accent font-mono mt-1.5">₨ {financialCalculations.salaries.toLocaleString()}</span>
                   </div>
-                  <div className="bg-plum-50 p-2.5 rounded border border-plum-950/5">
-                    <span className="text-[9px] font-mono text-plum-950/50 block font-bold leading-none uppercase">Commissions (Event)</span>
-                    <span className="block text-xs font-bold text-plum-950 font-mono mt-1.5">₨ {financialCalculations.eventCommissions.toLocaleString()}</span>
+                  <div className="bg-plum-950/70 p-2.5 rounded border border-gold-accent/10">
+                    <span className="text-[9px] font-mono text-champagne-light/50 block font-bold leading-none uppercase">Commissions (Event)</span>
+                    <span className="block text-xs font-bold text-gold-accent font-mono mt-1.5">₨ {financialCalculations.eventCommissions.toLocaleString()}</span>
                   </div>
-                  <div className="bg-plum-50 p-2.5 rounded border border-plum-950/5">
-                    <span className="text-[9px] font-mono text-plum-950/50 block font-bold leading-none uppercase">Commissions (Monthly)</span>
-                    <span className="block text-xs font-bold text-plum-950 font-mono mt-1.5">₨ {financialCalculations.monthlyCommissions.toLocaleString()}</span>
+                  <div className="bg-plum-950/70 p-2.5 rounded border border-gold-accent/10">
+                    <span className="text-[9px] font-mono text-champagne-light/50 block font-bold leading-none uppercase">Commissions (Monthly)</span>
+                    <span className="block text-xs font-bold text-gold-accent font-mono mt-1.5">₨ {financialCalculations.monthlyCommissions.toLocaleString()}</span>
                   </div>
-                  <div className="bg-plum-50 p-2.5 rounded border border-plum-950/5">
-                    <span className="text-[9px] font-mono text-plum-950/50 block font-bold leading-none uppercase">Partner Vendors</span>
-                    <span className="block text-xs font-bold text-plum-950 font-mono mt-1.5">₨ {financialCalculations.vendorPayments.toLocaleString()}</span>
+                  <div className="bg-plum-950/70 p-2.5 rounded border border-gold-accent/10">
+                    <span className="text-[9px] font-mono text-champagne-light/50 block font-bold leading-none uppercase">Partner Vendors</span>
+                    <span className="block text-xs font-bold text-gold-accent font-mono mt-1.5">₨ {financialCalculations.vendorPayments.toLocaleString()}</span>
                   </div>
-                  <div className="bg-plum-50 p-2.5 rounded border border-plum-950/5">
-                    <span className="text-[9px] font-mono text-plum-950/50 block font-bold leading-none uppercase">OpEx (Imported Blooms)</span>
-                    <span className="block text-xs font-bold text-plum-950 font-mono mt-1.5">₨ {financialCalculations.opex.toLocaleString()}</span>
+                  <div className="bg-plum-950/70 p-2.5 rounded border border-gold-accent/10">
+                    <span className="text-[9px] font-mono text-champagne-light/50 block font-bold leading-none uppercase">OpEx (Imported Blooms)</span>
+                    <span className="block text-xs font-bold text-gold-accent font-mono mt-1.5">₨ {financialCalculations.opex.toLocaleString()}</span>
                   </div>
-                  <div className="bg-plum-50 p-2.5 rounded border border-plum-950/5">
-                    <span className="text-[9px] font-mono text-plum-950/50 block font-bold leading-none uppercase">Other Expenses</span>
-                    <span className="block text-xs font-bold text-plum-950 font-mono mt-1.5">₨ {financialCalculations.otherExpenses.toLocaleString()}</span>
+                  <div className="bg-plum-950/70 p-2.5 rounded border border-gold-accent/10">
+                    <span className="text-[9px] font-mono text-champagne-light/50 block font-bold leading-none uppercase">Other Expenses</span>
+                    <span className="block text-xs font-bold text-gold-accent font-mono mt-1.5">₨ {financialCalculations.otherExpenses.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* LEDGER TRANSACTION HISTORY TABLE / CRISP WHITE BACKGROUND CARD */}
-            <div className="bg-white text-plum-950 rounded-xl shadow-xl overflow-hidden border border-gold-dark/15">
-              <div className="p-4 bg-gold-accent/15 border-b border-gold-dark/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <span className="font-serif text-sm font-semibold text-plum-900 uppercase tracking-widest">Financial Ledger Item Register ({selectedYear})</span>
+            {/* LEDGER TRANSACTION HISTORY TABLE / CRISP DARK BACKGROUND CARD */}
+            <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20">
+              <div className="p-4 bg-plum-950 border-b border-gold-dark/15 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <span className="font-serif text-sm font-semibold text-gold-accent uppercase tracking-widest">Financial Ledger Item Register ({selectedYear})</span>
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                   <div className="relative w-full md:w-60">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-plum-900/40" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-champagne-light/50" />
                     <input
                       type="text"
                       placeholder="Search transactions..."
                       value={ledgSearchTerm}
                       onChange={(e) => { setLedgSearchTerm(e.target.value); setLedgPage(1); }}
-                      className="pl-8 pr-3 py-1 bg-white text-plum-900 border border-slate-300 rounded text-xs w-full focus:outline-none focus:border-gold-dark font-sans placeholder-slate-400"
+                      className="pl-8 pr-3 py-1 bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded text-xs w-full focus:outline-none focus:border-gold-accent font-sans"
                     />
                   </div>
-                  <span className="text-[10px] font-mono text-plum-900/60 whitespace-nowrap">Total Listings: {sortedAndFilteredLedger.length} Records</span>
+                  <span className="text-[10px] font-mono text-champagne-light/50 whitespace-nowrap">Total Listings: {sortedAndFilteredLedger.length} Records</span>
                 </div>
               </div>
 
               {activeYearLedger.length === 0 && paginatedLedger.length === 0 ? (
-                <div className="py-16 text-center text-plum-950/50 italic text-sm">
+                <div className="py-16 text-center text-champagne-light/30 italic text-sm">
                   No transaction ledger logs filed under active fiscal year.
                 </div>
               ) : (
@@ -1877,49 +2192,49 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         {/* Column Sorting Headers */}
-                        <tr className="bg-plum-950/5 border-b border-plum-950/10 text-plum-950/80 uppercase tracking-wider font-mono text-[9px]">
-                          <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition text-left" onClick={() => handleLedgSort('date')}>
-                            <span className="flex items-center gap-1">Date {renderSortArrow('date', ledgSortField, ledgSortAsc)}</span>
+                        <tr className="bg-gold-light/90 border-b border-gold-dark/20 text-plum-950 uppercase tracking-wider font-mono text-[9px] font-bold">
+                          <th className="py-3 px-4 select-none text-left">
+                            <span className="flex items-center gap-1">Date</span>
                           </th>
-                          <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition text-left" onClick={() => handleLedgSort('month')}>
-                            <span className="flex items-center gap-1">Month Tracker {renderSortArrow('month', ledgSortField, ledgSortAsc)}</span>
+                          <th className="py-3 px-4 select-none text-left">
+                            <span className="flex items-center gap-1">Month Tracker</span>
                           </th>
-                          <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition text-left" onClick={() => handleLedgSort('category')}>
-                            <span className="flex items-center gap-1">Category System {renderSortArrow('category', ledgSortField, ledgSortAsc)}</span>
+                          <th className="py-3 px-4 select-none text-left">
+                            <span className="flex items-center gap-1">Category System</span>
                           </th>
-                          <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition text-left" onClick={() => handleLedgSort('description')}>
-                            <span className="flex items-center gap-1">Transaction Description {renderSortArrow('description', ledgSortField, ledgSortAsc)}</span>
+                          <th className="py-3 px-4 select-none text-left">
+                            <span className="flex items-center gap-1">Transaction Description</span>
                           </th>
-                          <th className="py-3 px-4 cursor-pointer hover:bg-plum-950/10 select-none group transition text-right" onClick={() => handleLedgSort('flow')}>
-                            <span className="flex items-center justify-end gap-1">Flow In / Out {renderSortArrow('flow', ledgSortField, ledgSortAsc)}</span>
+                          <th className="py-3 px-4 select-none text-right">
+                            <span className="flex items-center justify-end gap-1">Flow In / Out</span>
                           </th>
-                          <th className="py-3 px-4 text-right">Actions</th>
+                          <th className="py-3 px-4 text-right px-6">Actions</th>
                         </tr>
                         {/* Column Filtering Row */}
-                        <tr className="bg-plum-950/5 border-b border-plum-950/10">
-                          <th className="py-1 px-2">
+                        <tr className="bg-plum-950/60 border-b border-gold-accent/10">
+                          <th className="py-1.5 px-2">
                             <input 
                               type="text"
                               placeholder="Date..."
                               value={ledgColFilterDate}
                               onChange={(e) => { setLedgColFilterDate(e.target.value); setLedgPage(1); }}
-                              className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                              className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent"
                             />
                           </th>
-                          <th className="py-1 px-2">
+                          <th className="py-1.5 px-2">
                             <input 
                               type="text"
                               placeholder="Month..."
                               value={ledgColFilterMonth}
                               onChange={(e) => { setLedgColFilterMonth(e.target.value); setLedgPage(1); }}
-                              className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                              className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent"
                             />
                           </th>
-                          <th className="py-1 px-2">
+                          <th className="py-1.5 px-2">
                             <select 
                               value={ledgColFilterCategory}
                               onChange={(e) => { setLedgColFilterCategory(e.target.value); setLedgPage(1); }}
-                              className="w-full bg-white text-plum-900 border border-slate-300 rounded px-1.5 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                              className="w-full bg-plum-950 text-white border border-gold-accent/20 rounded px-1.5 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent"
                             >
                               <option value="All">All Categories</option>
                               <option value="Gross Client Booking">Gross Client Booking</option>
@@ -1930,20 +2245,20 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                               <option value="Commissions (Monthly)">Commissions (Monthly)</option>
                             </select>
                           </th>
-                          <th className="py-1 px-2">
+                          <th className="py-1.5 px-2">
                             <input 
                               type="text"
                               placeholder="Description..."
                               value={ledgColFilterDescription}
                               onChange={(e) => { setLedgColFilterDescription(e.target.value); setLedgPage(1); }}
-                              className="w-full bg-white text-plum-900 border border-slate-300 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                              className="w-full bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded px-2 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent"
                             />
                           </th>
-                          <th className="py-1 px-2">
+                          <th className="py-1.5 px-2">
                             <select 
                               value={ledgColFilterFlow}
                               onChange={(e) => { setLedgColFilterFlow(e.target.value); setLedgPage(1); }}
-                              className="w-full bg-white text-plum-900 border border-slate-300 rounded px-1.5 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-dark"
+                              className="w-full bg-plum-950 text-white border border-gold-accent/20 rounded px-1.5 py-1 text-[10px] font-sans font-normal focus:outline-none focus:border-gold-accent"
                             >
                               <option value="All">All Flows</option>
                               <option value="Revenue">Revenue In (+)</option>
@@ -1953,31 +2268,31 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                           <th className="py-1 px-2"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-plum-950/5 font-sans font-medium text-plum-950">
-                        {paginatedLedger.map(item => (
-                          <tr key={item.id} className="hover:bg-plum-50/50 transition">
-                            <td className="py-3.5 px-4 font-mono text-[11px] text-slate-800">{item.date}</td>
-                            <td className="py-3.5 px-4 font-semibold text-plum-950">{item.month}</td>
+                      <tbody className="divide-y divide-gold-accent/10 font-sans font-medium text-champagne-light/90">
+                        {paginatedLedger.map((item, idx) => (
+                          <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-plum-950/40' : 'bg-plum-900/30'} hover:bg-plum-900/60 transition-colors`}>
+                            <td className="py-3.5 px-4 font-mono text-[11px] text-champagne-dark">{item.date}</td>
+                            <td className="py-3.5 px-4 font-semibold text-white">{item.month}</td>
                             <td className="py-3.5 px-4">
-                              <span className={`inline-block px-2.5 py-0.5 text-[9px] uppercase font-mono tracking-wide rounded ${
+                              <span className={`inline-block px-2.5 py-0.5 text-[9px] uppercase font-mono tracking-wide rounded border ${
                                 item.type === 'Revenue' 
-                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
-                                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+                                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
+                                  : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
                               }`}>
                                 {item.category}
                               </span>
                             </td>
-                            <td className="py-3.5 px-4 block-td">{item.description}</td>
+                            <td className="py-3.5 px-4 block-td text-champagne-light/90">{item.description}</td>
                             <td className={`py-3.5 px-4 text-right font-bold font-mono text-sm ${
-                              item.type === 'Revenue' ? 'text-emerald-700' : 'text-rose-700'
+                              item.type === 'Revenue' ? 'text-emerald-400' : 'text-rose-450'
                             }`}>
                               {item.type === 'Revenue' ? '+' : '-'} ₨ {item.amount.toLocaleString()}
                             </td>
-                            <td className="py-3.5 px-4 text-right">
+                            <td className="py-3.5 px-4 text-right px-6">
                               <button
                                 type="button"
                                 onClick={() => handleDeleteLedger(item.id)}
-                                className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-1.5 rounded transition inline-block"
+                                className="text-red-400 hover:text-red-350 hover:bg-red-500/10 p-1.5 rounded transition inline-block"
                                 title="Delete Entry"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2121,6 +2436,187 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ----------------- TAB: CHANGE HISTORY & AUDIT TRAILS ----------------- */}
+        {activeTab === 'Change History' && (
+          <div className="space-y-6">
+            <div className="bg-[#1b031f] border border-gold-dark/15 p-6 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-xl text-gold-accent tracking-wide">Directory Modification Records & Audit Log</h3>
+                <p className="text-xs text-champagne-light/60 mt-1">
+                  Historical tracking of all profile creation, details modification, and deletion events for Clients and Event Vendors.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm("Are you sure you want to completely wipe the admin modification history logs? This cannot be undone.")) {
+                    setChangeHistory([]);
+                  }
+                }}
+                disabled={changeHistory.length === 0}
+                className="px-4 py-2 bg-red-600/20 border border-red-500/20 hover:bg-red-650/30 text-red-400 text-xs font-semibold uppercase tracking-wider rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-nowrap"
+              >
+                Clear Audit Trail
+              </button>
+            </div>
+
+            {/* Micro Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-plum-950 border border-gold-dark/15 p-4 rounded-lg flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-champagne-light/50 uppercase tracking-widest font-mono">Total Updates Logged</span>
+                  <p className="text-2xl font-serif text-gold-accent font-bold mt-0.5">{changeHistory.length}</p>
+                </div>
+                <div className="bg-gold-accent/10 p-2.5 rounded-full border border-gold-accent/20">
+                  <History className="w-5 h-5 text-gold-accent" />
+                </div>
+              </div>
+
+              <div className="bg-plum-950 border border-gold-dark/15 p-4 rounded-lg flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-champagne-light/50 uppercase tracking-widest font-mono">Client Profiles Updates</span>
+                  <p className="text-2xl font-serif text-emerald-400 font-bold mt-0.5">
+                    {changeHistory.filter(h => h.type === 'Customer').length}
+                  </p>
+                </div>
+                <div className="bg-emerald-500/10 p-2.5 rounded-full border border-emerald-500/20">
+                  <Users className="w-5 h-5 text-emerald-400" />
+                </div>
+              </div>
+
+              <div className="bg-plum-950 border border-gold-dark/15 p-4 rounded-lg flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-champagne-light/50 uppercase tracking-widest font-mono">Vendor Profiles Updates</span>
+                  <p className="text-2xl font-serif text-amber-400 font-bold mt-0.5">
+                    {changeHistory.filter(h => h.type === 'Vendor').length}
+                  </p>
+                </div>
+                <div className="bg-amber-500/10 p-2.5 rounded-full border border-amber-500/20">
+                  <Briefcase className="w-5 h-5 text-amber-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Hub */}
+            <div className="bg-plum-950 border border-gold-dark/15 p-4 rounded-lg flex flex-col md:flex-row items-center gap-4 justify-between">
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <span className="text-xs text-champagne-light/60 font-medium">Filter Log:</span>
+                
+                <select
+                  value={histTypeFilter}
+                  onChange={(e) => setHistTypeFilter(e.target.value)}
+                  className="bg-plum-900 border border-gold-dark/20 text-xs rounded px-3 py-1.5 text-gold-accent focus:outline-none"
+                >
+                  <option value="All">All Entities</option>
+                  <option value="Customer">Client Directory</option>
+                  <option value="Vendor">Vendor Database</option>
+                </select>
+
+                <select
+                  value={histActionFilter}
+                  onChange={(e) => setHistActionFilter(e.target.value)}
+                  className="bg-plum-900 border border-gold-dark/20 text-xs rounded px-3 py-1.5 text-gold-accent focus:outline-none"
+                >
+                  <option value="All">All Actions</option>
+                  <option value="Created">Created</option>
+                  <option value="Modified">Modified</option>
+                  <option value="Deleted">Deleted</option>
+                </select>
+              </div>
+
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-champagne-light/40" />
+                <input
+                  type="text"
+                  placeholder="Search log history..."
+                  value={histSearch}
+                  onChange={(e) => setHistSearch(e.target.value)}
+                  className="pl-9 pr-4 py-1.5 w-full bg-plum-900 border border-gold-dark/20 rounded focus:border-gold-accent focus:outline-none text-xs text-white placeholder-champagne-light/40"
+                />
+              </div>
+            </div>
+
+            {/* Audit Logs Lists */}
+            <div className="space-y-4">
+              {(() => {
+                const searchQ = histSearch.toLowerCase();
+
+                const filteredLogs = changeHistory.filter(log => {
+                  if (histTypeFilter !== 'All' && log.type !== histTypeFilter) return false;
+                  if (histActionFilter !== 'All' && log.action !== histActionFilter) return false;
+                  if (searchQ) {
+                    const matchesName = log.entityName.toLowerCase().includes(searchQ);
+                    const matchesField = log.changes.some(c => 
+                      c.field.toLowerCase().includes(searchQ) || 
+                      c.oldValue.toLowerCase().includes(searchQ) || 
+                      c.newValue.toLowerCase().includes(searchQ)
+                    );
+                    return matchesName || matchesField;
+                  }
+                  return true;
+                });
+
+                if (filteredLogs.length === 0) {
+                  return (
+                    <div className="py-12 text-center bg-[#1b031f] border border-gold-dark/15 rounded-lg">
+                      <History className="w-10 h-10 text-champagne-light/20 mx-auto mb-3" />
+                      <p className="text-sm font-semibold text-champagne-light/60">No change history actions found.</p>
+                      <p className="text-xs text-champagne-light/40 mt-1">Try resetting your filters or start editing customers/vendors.</p>
+                    </div>
+                  );
+                }
+
+                return filteredLogs.map((log) => (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-[#1b031f] border border-gold-dark/15 p-5 rounded-lg hover:border-gold-accent/25 transition duration-300 shadow-md flex flex-col md:flex-row gap-5 justify-between items-start"
+                  >
+                    <div className="space-y-2 shrink-0 md:max-w-xs w-full md:w-auto">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-0.5 text-[9px] uppercase font-mono tracking-wider font-bold rounded border ${
+                          log.action === 'Created' 
+                            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
+                            : log.action === 'Modified' 
+                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' 
+                            : 'bg-red-500/10 text-red-300 border-red-500/20'
+                        }`}>
+                          {log.action}
+                        </span>
+                        <span className="text-[10px] font-mono text-champagne-light/40">{log.timestamp}</span>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-serif text-sm font-bold text-gold-light">{log.entityName}</h4>
+                        <p className="text-[10px] text-champagne-light/50 font-mono mt-0.5 tracking-wide uppercase">
+                          {log.type === 'Customer' ? 'Client Directory' : 'Event Vendor'} • ID: {log.entityId}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Detailed field changes comparison */}
+                    <div className="flex-grow w-full md:w-auto md:pl-6 border-t md:border-t-0 md:border-l border-gold-dark/10 pt-4 md:pt-0 space-y-2">
+                      <span className="text-[9px] uppercase tracking-wider font-mono text-champagne-light/40 block">Change Log Detail</span>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {log.changes.map((change, cIdx) => (
+                          <div key={cIdx} className="bg-plum-950/40 border border-gold-accent/5 p-2.5 rounded flex flex-wrap items-center gap-x-2 text-xs font-sans font-medium">
+                            <span className="text-gold-accent/90 shrink-0 font-bold uppercase text-[9px] tracking-wider px-1.5 py-0.5 bg-gold-accent/10 rounded">{change.field}</span>
+                            <div className="flex items-center gap-2 flex-wrap mt-1 sm:mt-0 text-[11px]">
+                              <span className="text-champagne-light/50 italic line-through font-mono">{change.oldValue || 'N/A'}</span>
+                              <span className="text-gold-light shrink-0 font-sans font-semibold">→</span>
+                              <span className="text-white bg-[#220a22] border border-gold-accent/10 px-2 py-0.5 rounded font-semibold font-sans">{change.newValue || 'N/A'}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                ));
+              })()}
+            </div>
           </div>
         )}
 
@@ -2609,7 +3105,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                                     <option value="Birthday">Birthday</option>
                                     <option value="Nikah">Nikah</option>
                                     <option value="Wedding">Wedding</option>
-                                    <option value="Corporate">Corporate</option>
+                                    <option value="Office decor">Office decor</option>
                                   </select>
                                 </div>
                                 <div>
@@ -2816,6 +3312,250 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
       {/* ----------------- POPUP DIALOG MODULES (MODALS) ----------------- */}
       <AnimatePresence>
+        {/* EDIT CUSTOMER CLIENT MODAL */}
+        {editingCustomer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-plum-950/85 backdrop-blur-sm"
+              onClick={() => setEditingCustomer(null)}
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-white text-plum-900 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="bg-plum-950 text-white p-5 flex justify-between items-center border-b border-gold-dark/20">
+                <h4 className="font-serif text-lg text-gold-accent tracking-wider">Modify Client Profile</h4>
+                <button onClick={() => setEditingCustomer(null)} className="text-champagne-light/60 hover:text-white p-1 rounded-full hover:bg-plum-900">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditCustomerSubmit} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">First & Last Name*</label>
+                    <input 
+                      type="text"
+                      required
+                      value={editingCustomer.fullName}
+                      onChange={(e) => setEditingCustomer({...editingCustomer, fullName: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Phone Contact*</label>
+                    <input 
+                      type="text"
+                      required
+                      value={editingCustomer.phone}
+                      onChange={(e) => setEditingCustomer({...editingCustomer, phone: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Email Address*</label>
+                    <input 
+                      type="email"
+                      required
+                      value={editingCustomer.email}
+                      onChange={(e) => setEditingCustomer({...editingCustomer, email: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Target Event Date</label>
+                    <input 
+                      type="date"
+                      value={editingCustomer.targetDate}
+                      onChange={(e) => setEditingCustomer({...editingCustomer, targetDate: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">DHA Location / Block*</label>
+                    <input 
+                      type="text"
+                      value={editingCustomer.location}
+                      onChange={(e) => setEditingCustomer({...editingCustomer, location: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Lead Lifecycle Status</label>
+                    <select
+                      value={editingCustomer.status}
+                      onChange={(e) => setEditingCustomer({...editingCustomer, status: e.target.value as Customer['status']})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    >
+                      <option value="Served">Served (Completed Event)</option>
+                      <option value="Potential">Potential (Active Negotiation)</option>
+                      <option value="Window Shopping">Window Shopping</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-3 text-xs justify-end border-t border-plum-950/5">
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingCustomer(null)}
+                    className="px-4 py-2 hover:bg-slate-100 rounded text-plum-950 font-bold tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-5 py-2 bg-plum-950 text-gold-accent hover:bg-plum-900 rounded font-bold tracking-widest uppercase shadow"
+                  >
+                    Apply Changes
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* EDIT EVENT VENDOR MODAL */}
+        {editingVendor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-plum-950/85 backdrop-blur-sm"
+              onClick={() => setEditingVendor(null)}
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-white text-plum-900 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative border border-gold-dark/25 z-10 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="bg-plum-950 text-white p-5 flex justify-between items-center border-b border-gold-dark/20">
+                <h4 className="font-serif text-lg text-gold-accent tracking-wider">Modify Vendor Details</h4>
+                <button onClick={() => setEditingVendor(null)} className="text-champagne-light/60 hover:text-white p-1 rounded-full hover:bg-plum-900">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditVendorSubmit} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Company Name*</label>
+                    <input 
+                      type="text"
+                      required
+                      value={editingVendor.companyName}
+                      onChange={(e) => setEditingVendor({...editingVendor, companyName: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Vendor Sector/Category</label>
+                    <select
+                      value={editingVendor.category}
+                      onChange={(e) => setEditingVendor({...editingVendor, category: e.target.value as Vendor['category']})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    >
+                      <option value="Catering">Catering</option>
+                      <option value="Decorators">Decorators</option>
+                      <option value="Sound/DJ Music">Sound/DJ Music</option>
+                      <option value="Photography">Photography</option>
+                      <option value="Bid Boxes & Giveaways">Bid Boxes & Giveaways</option>
+                      <option value="Music system">Music system</option>
+                      <option value="Sea sports">Sea sports</option>
+                      <option value="Printings">Printings</option>
+                      <option value="flowers">flowers</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Contact Person Name*</label>
+                    <input 
+                      type="text"
+                      required
+                      value={editingVendor.contactPerson}
+                      onChange={(e) => setEditingVendor({...editingVendor, contactPerson: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Contact Number (Phone)*</label>
+                    <input 
+                      type="text"
+                      required
+                      value={editingVendor.phone}
+                      onChange={(e) => setEditingVendor({...editingVendor, phone: e.target.value})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Base Rate Rate (₨)*</label>
+                    <input 
+                      type="number"
+                      required
+                      value={editingVendor.baseRate}
+                      onChange={(e) => setEditingVendor({...editingVendor, baseRate: Number(e.target.value)})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Pending Outstanding Balance (₨)</label>
+                    <input 
+                      type="number"
+                      value={editingVendor.pendingBalance}
+                      onChange={(e) => setEditingVendor({...editingVendor, pendingBalance: Number(e.target.value)})}
+                      className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">HQ Street Address</label>
+                  <input 
+                    type="text"
+                    value={editingVendor.address || ''}
+                    placeholder="e.g. Plot 23-C, DHA Phase 5, Karachi"
+                    onChange={(e) => setEditingVendor({...editingVendor, address: e.target.value})}
+                    className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-3 text-xs justify-end border-t border-plum-950/5">
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingVendor(null)}
+                    className="px-4 py-2 hover:bg-slate-100 rounded text-plum-950 font-bold tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-5 py-2 bg-plum-950 text-gold-accent hover:bg-plum-900 rounded font-bold tracking-widest uppercase shadow"
+                  >
+                    Apply Changes
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
         {/* ADD NEW CUSTOMER CLIENT MODAL */}
         {showAddCustomerModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -2976,9 +3716,12 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       onChange={(e) => setNewVendor({...newVendor, category: e.target.value as Vendor['category']})}
                       className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
                     >
-                      <option value="Catering">Catering</option>
-                      <option value="Decorators">Decorators</option>
-                      <option value="Sound/DJ Music">Sound/DJ Music</option>
+                      <option value="Catering">Catering (Catters)</option>
+                      <option value="Decorators">Decorators (decorer)</option>
+                      <option value="Music system">Music system</option>
+                      <option value="Sea sports">Sea sports</option>
+                      <option value="Printings">Printings</option>
+                      <option value="flowers">flowers</option>
                       <option value="Photography">Photography</option>
                       <option value="Bid Boxes & Giveaways">Bid Boxes & Giveaways</option>
                     </select>
@@ -3008,6 +3751,17 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-[#15021a] font-bold block">Company Address</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Plot 23-C, Stadium Commercial Lane 2, DHA Phase 5, Karachi"
+                    value={newVendor.address}
+                    onChange={(e) => setNewVendor({...newVendor, address: e.target.value})}
+                    className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -3137,6 +3891,19 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                     onChange={(e) => setNewFeedback({...newFeedback, internalNotes: e.target.value})}
                     className="w-full text-xs px-3 py-2 border border-plum-950/25 rounded focus:border-gold-accent focus:outline-none focus:ring-1 focus:ring-gold-accent text-plum-950 bg-white"
                   />
+                </div>
+
+                <div className="flex items-center gap-2 py-1">
+                  <input 
+                    type="checkbox"
+                    id="new-feed-show"
+                    checked={newFeedback.showOnWebsite}
+                    onChange={(e) => setNewFeedback({...newFeedback, showOnWebsite: e.target.checked})}
+                    className="w-4 h-4 rounded text-gold-accent border-plum-950/25 focus:ring-gold-accent cursor-pointer"
+                  />
+                  <label htmlFor="new-feed-show" className="text-xs font-sans text-plum-950 select-none cursor-pointer">
+                    Show this feedback review on the live website testimonial section immediately
+                  </label>
                 </div>
 
                 <div className="pt-4 flex gap-3 text-xs justify-end border-t border-plum-950/5">

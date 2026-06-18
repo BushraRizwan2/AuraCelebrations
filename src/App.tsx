@@ -20,7 +20,10 @@ import {
   FlameKindling,
   Shield,
   Menu,
-  X
+  X,
+  Search,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 import { SeasonType, VibeType, StyleProposal, StylingService } from './types';
 import { LUXURY_SERVICES, TESTIMONIALS, getStyleProposal } from './data';
@@ -95,32 +98,12 @@ const HIGHLIGHTS = [
   },
   {
     id: 'highlight-office',
-    category: 'Corporate' as const,
-    title: 'Office Independence Day Decor',
-    subtitle: 'Emerald & White National Pride Style',
-    description: 'Elegant patriotic festive styling for office premises celebration. Festive emerald drapes matched with fresh orchids and warm crescent lighting profiles.',
+    category: 'Office decor' as const,
+    title: 'Office Pakistan Independence Decor',
+    subtitle: 'Corporate Emerald & White National Pride',
+    description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
     image: '/images/aura_office_decor_1781397716019.jpg',
     features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs']
-  },
-  {
-    id: 'highlight-corporate-dinner',
-    category: 'Corporate' as const,
-    title: 'Corporate Annual Gala Dinner',
-    subtitle: 'Ultra-Exclusive Ballrooms & Curation',
-    description: 'Imperial banquet arrangements matching core brand identities. Floating floral orbs, cool-wash uplighting, and sophisticated customized tableware designs.',
-    image: '/images/aura_corporate_dinner_1781653151776.jpg',
-    features: ['Hydrangea & White Orchid Orbs', 'Cool Wash LED Atmosphere', 'Gold Trimmed Dinnerware Setups'],
-    price: 800000
-  },
-  {
-    id: 'highlight-corporate-picnic',
-    category: 'Corporate' as const,
-    title: 'Luxury Corporate Team Outings & Picnics',
-    subtitle: 'Bohemian Garden Cabanas & Mocktail Bars',
-    description: 'A charming, highly stylized outdoor picnic. Relaxed linen seating pads, pristine white wooden tables, premium organic juice bars, and fun bespoke lawn lounge setups.',
-    image: '/images/aura_corporate_picnic_1781653172644.jpg',
-    features: ['Custom Boho Cabana Shelters', 'Prestige Velvet/Linen Seating Pads', 'Premium Mocktail Lounge Stations'],
-    price: 350000
   }
 ];
 
@@ -157,9 +140,7 @@ const resolveImgUrl = (url: string | undefined): string => {
     'celestique_floral_1781396321270.jpg',
     'celestique_hero_1781396253917.jpg',
     'celestique_reception_1781396299184.jpg',
-    'celestique_tablescape_1781396278721.jpg',
-    'aura_corporate_dinner_1781653151776.jpg',
-    'aura_corporate_picnic_1781653172644.jpg'
+    'celestique_tablescape_1781396278721.jpg'
   ];
   
   for (const filename of KNOWN_FILENAMES) {
@@ -242,6 +223,31 @@ export default function App() {
     return TESTIMONIALS;
   });
 
+  const [feedbacks, setFeedbacks] = useState<any[]>(() => {
+    const raw = localStorage.getItem('aura_feedbacks');
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const allTestimonials = useMemo(() => {
+    const activeReviews = feedbacks
+      .filter((f: any) => f.showOnWebsite === true)
+      .map((f: any) => ({
+        id: f.id,
+        name: f.customerName,
+        rating: f.rating || 5,
+        content: `“${f.feedbackText}”`,
+        eventType: 'Honored Guest Review',
+        location: 'Karachi, PK',
+        date: f.eventDate || 'Recently'
+      }));
+    return [...dynamicTestimonials, ...activeReviews];
+  }, [dynamicTestimonials, feedbacks]);
+
   // Active unread alerts tracker for badge in primary headers!
   const [unreadCount, setUnreadCount] = useState(() => {
     const raw = localStorage.getItem('aura_notifications');
@@ -273,6 +279,13 @@ export default function App() {
       const parsedTest = sanitizeStorageJson(rawTest);
       if (parsedTest) setDynamicTestimonials(parsedTest);
 
+      const rawFeeds = localStorage.getItem('aura_feedbacks');
+      if (rawFeeds) {
+        try {
+          setFeedbacks(JSON.parse(rawFeeds));
+        } catch (e) {}
+      }
+
       const rawNotifs = localStorage.getItem('aura_notifications');
       if (rawNotifs) {
         try {
@@ -290,12 +303,24 @@ export default function App() {
     };
   }, []);
 
-  // Highlights active category filter
-  const [activeHighlightCategory, setActiveHighlightCategory] = useState<'all' | 'Birthday' | 'Nikah' | 'Wedding' | 'Corporate'>('all');
+  // Highlights active category and search filter states
+  const [activeHighlightCategory, setActiveHighlightCategory] = useState<'all' | 'Birthday' | 'Nikah' | 'Wedding' | 'Office decor'>('all');
+  const [highlightsSearchQuery, setHighlightsSearchQuery] = useState<string>('');
+
   const filteredHighlights = useMemo(() => {
-    if (activeHighlightCategory === 'all') return dynamicHighlights;
-    return dynamicHighlights.filter(h => h.category === activeHighlightCategory);
-  }, [activeHighlightCategory, dynamicHighlights]);
+    let items = dynamicHighlights;
+    if (activeHighlightCategory !== 'all') {
+      items = items.filter(h => h.category === activeHighlightCategory);
+    }
+    if (highlightsSearchQuery.trim() !== '') {
+      const q = highlightsSearchQuery.toLowerCase();
+      items = items.filter(h => 
+        (h.title && h.title.toLowerCase().includes(q)) || 
+        (h.description && h.description.toLowerCase().includes(q))
+      );
+    }
+    return items;
+  }, [activeHighlightCategory, dynamicHighlights, highlightsSearchQuery]);
 
   // Highlights detailed view state
   const [selectedHighlight, setSelectedHighlight] = useState<any | null>(null);
@@ -625,11 +650,11 @@ export default function App() {
             <button 
               id="nav-cta-contact"
               onClick={() => { setActiveTab('inquiry'); scrollToSection('inquiry-section'); }}
-              className="border border-gold-accent hover:bg-gold-accent hover:text-plum-950 transition-all duration-500 px-2 py-1 sm:px-4 sm:py-1.5 md:px-5 md:py-2 rounded text-[8px] sm:text-[10px] md:text-xs uppercase tracking-widest text-gold-accent font-semibold font-sans flex items-center gap-1 shrink-0 text-nowrap"
+              className="group border border-gold-accent hover:bg-gold-accent hover:text-plum-950 transition-all duration-500 px-2 py-1 sm:px-4 sm:py-1.5 md:px-5 md:py-2 rounded text-[8px] sm:text-[10px] md:text-xs uppercase tracking-widest text-gold-accent font-semibold font-sans flex items-center gap-1 shrink-0 text-nowrap"
             >
-              <span className="hidden min-[360px]:inline">Inquire Now</span>
-              <span className="min-[360px]:hidden">Inquire</span>
-              <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              <span className="hidden min-[360px]:inline group-hover:text-plum-950 transition-colors duration-500">Inquire Now</span>
+              <span className="min-[360px]:hidden group-hover:text-plum-950 transition-colors duration-500">Inquire</span>
+              <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gold-accent group-hover:text-plum-950 transition-colors duration-500" />
             </button>
 
             {/* Hamburger Menu Toggle on Mobile */}
@@ -718,7 +743,7 @@ export default function App() {
                 <button 
                   id="hero-btn-discover"
                   onClick={() => scrollToSection('moodboard-section')}
-                  className="bg-gold-accent hover:bg-gold-light text-plum-950 px-8 py-4 text-xs font-semibold uppercase tracking-widest rounded transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-gold-accent/10"
+                  className="bg-gold-accent hover:bg-gold-light text-plum-950 px-6 py-3 text-xs font-semibold uppercase tracking-widest rounded transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-gold-accent/10"
                 >
                   <span>Curate Your Moodboard</span>
                   <Compass className="w-4 h-4" />
@@ -726,7 +751,7 @@ export default function App() {
                 <button 
                   id="hero-btn-estimator"
                   onClick={() => scrollToSection('estimator-section')}
-                  className="border border-champagne-dark/50 hover:border-gold-accent hover:text-gold-light px-8 py-4 text-xs font-semibold uppercase tracking-widest rounded transition-all duration-300 text-champagne-light flex items-center justify-center gap-2"
+                  className="border border-champagne-dark/50 hover:border-gold-accent hover:text-gold-light px-6 py-3 text-xs font-semibold uppercase tracking-widest rounded transition-all duration-300 text-champagne-light flex items-center justify-center gap-2"
                 >
                   Assemble Blueprint
                 </button>
@@ -1123,9 +1148,34 @@ export default function App() {
             </p>
           </div>
 
+        {/* Real-time Text Search Bar */}
+        <div className="max-w-md mx-auto mb-8 relative px-4 w-full">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gold-accent/70" />
+            </span>
+            <input
+              type="text"
+              value={highlightsSearchQuery}
+              onChange={(e) => setHighlightsSearchQuery(e.target.value)}
+              placeholder="Search setups (e.g., marigold, jasmine, crimson, sage...)"
+              className="w-full pl-10 pr-10 py-3 bg-plum-950/60 border border-gold-dark/30 rounded-full text-xs text-white placeholder-champagne-light/40 focus:outline-none focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/40 transition-all duration-300 shadow-inner"
+            />
+            {highlightsSearchQuery && (
+              <button
+                onClick={() => setHighlightsSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-champagne-light/50 hover:text-gold-accent transition-colors block"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Dynamic Category Filtering Tabs */}
         <div className="flex flex-wrap justify-center items-center gap-3 mb-16 max-w-3xl mx-auto">
-          {(['all', 'Birthday', 'Nikah', 'Wedding', 'Corporate'] as const).map(cat => (
+          {(['all', 'Birthday', 'Nikah', 'Wedding', 'Office decor'] as const).map(cat => (
             <button
               key={cat}
               onClick={() => setActiveHighlightCategory(cat)}
@@ -1143,44 +1193,68 @@ export default function App() {
         {/* Filtered Grid with smooth layout animations */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredHighlights.map((highlight) => (
-              <motion.div
-                key={highlight.id}
-                layout
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
+            {filteredHighlights.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4 }}
-                className="group relative flex flex-col justify-between"
+                className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-16 bg-plum-950/45 border border-gold-dark/15 rounded-xl space-y-4"
               >
-                {/* Backing structural double gold line outline */}
-                <div className="absolute inset-0 border border-gold-accent/10 translate-x-3 translate-y-3 rounded-lg -z-10 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform duration-500" />
-                
-                <div 
-                  onClick={() => setSelectedHighlight(highlight)}
-                  className="bg-plum-950 border border-gold-dark/25 rounded-lg overflow-hidden shadow-2xl relative flex flex-col h-full justify-between cursor-pointer group/card hover:border-gold-accent/30 transition-all duration-300"
+                <div className="w-12 h-12 rounded-full bg-gold-accent/10 flex items-center justify-center mx-auto">
+                  <Search className="w-5 h-5 text-gold-accent" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-gold-light font-serif text-lg">No Matching Portfolio Found</h4>
+                  <p className="text-xs text-champagne-light/50 max-w-sm mx-auto leading-relaxed">
+                    We couldn't find any setups matching "{highlightsSearchQuery}". Try looking up different floral names or layout styles.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => { setHighlightsSearchQuery(''); setActiveHighlightCategory('all'); }}
+                  className="px-4 py-2 text-xs bg-gold-accent/10 border border-gold-accent/20 rounded hover:bg-gold-accent/25 hover:border-gold-accent text-gold-accent font-sans uppercase tracking-widest transition-all duration-300 cursor-pointer"
                 >
-                  {/* Photo container */}
-                  <div className="aspect-[4/3] overflow-hidden relative">
-                    <img 
-                      src={resolveImgUrl(highlight.image)} 
-                      alt={highlight.title} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                      referrerPolicy="no-referrer"
-                    />
-                    {/* Hover state luxury action overlay */}
-                    <div className="absolute inset-0 bg-plum-950/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                      <span className="py-2.5 px-5 bg-plum-950/90 border border-gold-accent hover:bg-gold-accent hover:text-plum-950 text-gold-accent font-serif text-xs uppercase tracking-widest rounded transition-all duration-300 shadow-xl">
-                        Discover Specifications
+                  Reset Filtering
+                </button>
+              </motion.div>
+            ) : (
+              filteredHighlights.map((highlight) => (
+                <motion.div
+                  key={highlight.id}
+                  layout
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4 }}
+                  className="group relative flex flex-col justify-between"
+                >
+                  {/* Backing structural double gold line outline */}
+                  <div className="absolute inset-0 border border-gold-accent/10 translate-x-3 translate-y-3 rounded-lg -z-10 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform duration-500" />
+                  
+                  <div 
+                    onClick={() => setSelectedHighlight(highlight)}
+                    className="bg-plum-950 border border-gold-dark/25 rounded-lg overflow-hidden shadow-2xl relative flex flex-col h-full justify-between cursor-pointer group/card hover:border-gold-accent/30 transition-all duration-300"
+                  >
+                    {/* Photo container */}
+                    <div className="aspect-[4/3] overflow-hidden relative">
+                      <img 
+                        src={resolveImgUrl(highlight.image)} 
+                        alt={highlight.title} 
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-110"
+                        referrerPolicy="no-referrer"
+                      />
+                      {/* Hover state luxury action overlay */}
+                      <div className="absolute inset-0 bg-plum-950/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                        <span className="py-2.5 px-5 bg-plum-950/90 border border-gold-accent hover:bg-gold-accent hover:text-plum-950 text-gold-accent font-serif text-xs uppercase tracking-widest rounded transition-all duration-300 shadow-xl">
+                          Discover Specifications
+                        </span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-plum-950/80 via-transparent to-transparent pointer-events-none" />
+                      
+                      {/* Category Overlay Tag */}
+                      <span className="absolute top-4 left-4 bg-plum-950/90 border border-gold-accent/40 text-[9px] uppercase tracking-[0.25em] text-gold-accent font-semibold px-3 py-1 rounded-full backdrop-blur-sm z-10">
+                        {highlight.category}
                       </span>
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-plum-950/80 via-transparent to-transparent pointer-events-none" />
-                    
-                    {/* Category Overlay Tag */}
-                    <span className="absolute top-4 left-4 bg-plum-950/90 border border-gold-accent/40 text-[9px] uppercase tracking-[0.25em] text-gold-accent font-semibold px-3 py-1 rounded-full backdrop-blur-sm z-10">
-                      {highlight.category}
-                    </span>
-                  </div>
 
                   {/* Narrative details */}
                   <div className="p-6 space-y-4 flex-grow flex flex-col justify-between">
@@ -1216,7 +1290,8 @@ export default function App() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            ))
+            )}
           </AnimatePresence>
         </div>
       </section>
@@ -1440,7 +1515,7 @@ export default function App() {
 
           {/* Bento Grid layout style */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {dynamicTestimonials.map((t, idx) => (
+            {allTestimonials.map((t, idx) => (
             <div 
               key={t.id} 
               id={`testimonial-card-${t.id}`}
@@ -1776,6 +1851,38 @@ export default function App() {
             <p className="text-xs text-champagne-light/50 leading-relaxed max-w-xs">
               Designing theatrical atmospheres and opulent table layouts that write a mesmerizing legacy for fine celebrations.
             </p>
+            {/* Social Media Links */}
+            <div className="pt-2 flex items-center gap-3">
+              <a 
+                href="https://www.facebook.com/profile.php?id=61568845152955" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-8 h-8 rounded-full border border-gold-dark/30 hover:border-gold-accent text-champagne-light/60 hover:text-gold-accent flex items-center justify-center transition-all duration-300 bg-plum-900/20 hover:scale-110 cursor-pointer"
+                title="Follow Aura on Facebook"
+              >
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a 
+                href="https://www.instagram.com/aura.celeberations/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-8 h-8 rounded-full border border-gold-dark/30 hover:border-gold-accent text-champagne-light/60 hover:text-gold-accent flex items-center justify-center transition-all duration-300 bg-plum-900/20 hover:scale-110 cursor-pointer"
+                title="Follow Aura on Instagram"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a 
+                href="https://wa.me/923313388966" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-8 h-8 rounded-full border border-gold-dark/30 hover:border-gold-accent text-champagne-light/60 hover:text-gold-accent flex items-center justify-center transition-all duration-300 bg-plum-900/20 hover:scale-110 cursor-pointer"
+                title="Chat with Aura on WhatsApp"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.458 5.704 1.459h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+              </a>
+            </div>
           </div>
 
           {/* Quick links */}
@@ -1795,7 +1902,7 @@ export default function App() {
             <div className="space-y-3 text-xs text-champagne-light/60">
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-gold-accent shrink-0" />
-                <span>DHA Phase 3, Karachi ・ DHA Phase 6, Karachi ・ DHA Phase 8, Karachi, Pakistan</span>
+                <span>103/A, Block 5 Clifton, Karachi, 75500, Pakistan</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-gold-accent shrink-0" />
@@ -1955,10 +2062,10 @@ export default function App() {
                         {selectedHighlight.category === 'Birthday' && (
                           <span>A mesmerizing dual-focus setup where custom high-gloss lacquer finishes on frame installations produce majestic camera-ready sheens. Soft lavender wash uplighting creates premium atmospheric photography.</span>
                         )}
-                        {selectedHighlight.category === 'Corporate' && (
-                          <span>Perfect for high-density lobby entrances, annual dinners, company outings, or custom executive stages. Corporate branding color palettes or emblems can be integrated with backlighting arrays seamlessly.</span>
+                        {selectedHighlight.category === 'Office decor' && (
+                          <span>Perfect for high-density lobby entrances, public forums, or custom executive stages. Corporate branding color palettes or emblems can be integrated with backlighting arrays seamlessly.</span>
                         )}
-                        {!['Wedding', 'Nikah', 'Birthday', 'Corporate'].includes(selectedHighlight.category) && (
+                        {!['Wedding', 'Nikah', 'Birthday', 'Office decor'].includes(selectedHighlight.category) && (
                           <span>Our curating specialists recommend coordinating your color swatches with premium silk overlays to balance atmospheric harmony. Customized configurations are fully tailored upon booking verification.</span>
                         )}
                       </div>
