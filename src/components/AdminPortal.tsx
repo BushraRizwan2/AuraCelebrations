@@ -1556,10 +1556,10 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
-          {/* Bell Icon triggering Notifications on hover */}
+          {/* Bell Icon triggering Notifications on click */}
           <button 
             type="button"
-            onMouseEnter={() => setActiveTab('Notifications')}
+            onClick={() => setActiveTab('Notifications')}
             className={`p-2 sm:p-2.5 rounded-full text-xs flex items-center justify-center shadow-lg border transition-all duration-300 relative group ${
               activeTab === 'Notifications'
                 ? 'bg-gold-accent text-plum-950 border-gold-accent shadow-gold-accent/25'

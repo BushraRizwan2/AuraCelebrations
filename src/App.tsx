@@ -1303,19 +1303,19 @@ export default function App() {
                   
                   <div 
                     onClick={() => setSelectedHighlight(highlight)}
-                    className="bg-plum-950 border border-gold-dark/25 rounded-lg overflow-hidden shadow-2xl relative flex flex-col h-full justify-between cursor-pointer group/card hover:border-gold-accent/30 transition-all duration-300"
+                    className="bg-plum-950 border border-gold-dark/25 rounded-lg overflow-hidden shadow-2xl relative flex flex-col h-full justify-between cursor-pointer hover:border-gold-accent/50 group-hover:border-gold-accent/40 group-hover:shadow-[0_0_30px_rgba(212,175,55,0.12)] transition-all duration-500"
                   >
                     {/* Photo container */}
                     <div className="aspect-[4/3] overflow-hidden relative">
                       <img 
                         src={resolveImgUrl(highlight.image)} 
                         alt={highlight.title} 
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                         referrerPolicy="no-referrer"
                       />
                       {/* Hover state luxury action overlay */}
-                      <div className="absolute inset-0 bg-plum-950/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                        <span className="py-2.5 px-5 bg-plum-950/90 border border-gold-accent hover:bg-gold-accent hover:text-plum-950 text-gold-accent font-serif text-xs uppercase tracking-widest rounded transition-all duration-300 shadow-xl">
+                      <div className="absolute inset-0 bg-plum-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                        <span className="py-2.5 px-5 bg-plum-950/90 border border-gold-accent hover:bg-gold-accent hover:!text-plum-950 text-gold-accent font-serif text-xs uppercase tracking-widest rounded transition-all duration-300 shadow-xl font-medium">
                           Discover Specifications
                         </span>
                       </div>
@@ -1354,8 +1354,8 @@ export default function App() {
                       </ul>
                       
                       {/* Discover details text trigger */}
-                      <div className="text-[10px] uppercase tracking-wider font-sans text-gold-accent group-hover/card:text-gold-light flex items-center justify-end gap-1 font-semibold pt-1">
-                        View Detailed Concept <ChevronRight className="w-3.5 h-3.5 group-hover/card:translate-x-0.5 transition-transform" />
+                      <div className="text-[10px] uppercase tracking-wider font-sans text-gold-accent group-hover:text-gold-light flex items-center justify-end gap-1 font-semibold pt-1">
+                        View Detailed Concept <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
                   </div>
