@@ -98,12 +98,48 @@ const HIGHLIGHTS = [
   },
   {
     id: 'highlight-office',
-    category: 'Office decor' as const,
+    category: 'Corporate' as const,
     title: 'Office Pakistan Independence Decor',
     subtitle: 'Corporate Emerald & White National Pride',
     description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
     image: '/images/aura_office_decor_1781397716019.jpg',
     features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs']
+  },
+  {
+    id: 'highlight-gala',
+    category: 'Corporate' as const,
+    title: 'Grand Corporate Gala Dinner',
+    subtitle: 'Prestigious Gala & Award Night Atmospheric Setup',
+    description: 'A spectacular high-end gala dinner featuring opulent banquet tables decorated with cascading plum floral centerpieces, gilded dinnerware, and customized architectural uplighting that reflects standard-setting corporate prestige.',
+    image: '/images/corporate_gala_1781799240061.jpg',
+    features: ['Cascading Plum Florals', 'Gilded Charger Settings', 'Architectural Ambient Uplighting']
+  },
+  {
+    id: 'highlight-cruise',
+    category: 'Corporate' as const,
+    title: 'Luxury Yacht Cruise Dinner',
+    subtitle: 'Sunset Deck Banquets & Floating Soirees',
+    description: 'An exclusive oceanfront banquet on a luxury yacht. Features sparkling brass lantern arrays, premium white-and-gold tablescapes, and ambient sunset lights reflecting off Karachi\'s sparkling waves.',
+    image: '/images/cruise_dinner_1781799262512.jpg',
+    features: ['Sparkling Brass Lanterns', 'Premium White-and-Gold Linens', 'Sunset Ocean Deck Setups']
+  },
+  {
+    id: 'highlight-qawwali',
+    category: 'Corporate' as const,
+    title: 'Atmospheric Qawwali Night',
+    subtitle: 'Sufi Musical Heritage & Festive Opulence',
+    description: 'A mystical and opulent musical setting, organized in royal plum carpeted floor spaces, velvet gavi cushions, hundreds of warm taper candles, and fresh rose installations for a soulful experience.',
+    image: '/images/qawwali_night_1781799286007.jpg',
+    features: ['Plush Velvet Floor Cushions', 'Warm Taper Candle Trails', 'Royal Silk Canopy Drapes']
+  },
+  {
+    id: 'highlight-picnic',
+    category: 'Corporate' as const,
+    title: 'Elite Picnic with Sea Sports',
+    subtitle: 'Coastal Beach Escaping & Watersport Galas',
+    description: 'A luxury bohemian beachside escape. Features crisp white beach parasols, low organic wooden dining setups, handwoven cushions, fine crystal glasses, and high-octane watersport options like jet skiing.',
+    image: '/images/beach_sports_picnic_1781799307283.jpg',
+    features: ['Elegant White Boho Parasols', 'Low Coastal Dining Tables', 'Exhilarating Watersport Galas']
   }
 ];
 
@@ -140,7 +176,11 @@ const resolveImgUrl = (url: string | undefined): string => {
     'celestique_floral_1781396321270.jpg',
     'celestique_hero_1781396253917.jpg',
     'celestique_reception_1781396299184.jpg',
-    'celestique_tablescape_1781396278721.jpg'
+    'celestique_tablescape_1781396278721.jpg',
+    'corporate_gala_1781799240061.jpg',
+    'cruise_dinner_1781799262512.jpg',
+    'qawwali_night_1781799286007.jpg',
+    'beach_sports_picnic_1781799307283.jpg'
   ];
   
   for (const filename of KNOWN_FILENAMES) {
@@ -212,7 +252,8 @@ export default function App() {
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed && parsed.length >= 8) return parsed;
+    if (parsed && parsed.length >= 12 && parsed.some(h => h.category === 'Corporate')) return parsed;
+    localStorage.setItem('aura_dynamic_highlights', JSON.stringify(HIGHLIGHTS));
     return HIGHLIGHTS;
   });
 
@@ -273,7 +314,14 @@ export default function App() {
 
       const rawHigh = localStorage.getItem('aura_dynamic_highlights');
       const parsedHigh = sanitizeStorageJson(rawHigh);
-      if (parsedHigh) setDynamicHighlights(parsedHigh);
+      if (parsedHigh) {
+        if (parsedHigh.length >= 12 && parsedHigh.some(h => h.category === 'Corporate')) {
+          setDynamicHighlights(parsedHigh);
+        } else {
+          setDynamicHighlights(HIGHLIGHTS);
+          localStorage.setItem('aura_dynamic_highlights', JSON.stringify(HIGHLIGHTS));
+        }
+      }
 
       const rawTest = localStorage.getItem('aura_dynamic_testimonials');
       const parsedTest = sanitizeStorageJson(rawTest);
@@ -304,7 +352,7 @@ export default function App() {
   }, []);
 
   // Highlights active category and search filter states
-  const [activeHighlightCategory, setActiveHighlightCategory] = useState<'all' | 'Birthday' | 'Nikah' | 'Wedding' | 'Office decor'>('all');
+  const [activeHighlightCategory, setActiveHighlightCategory] = useState<'all' | 'Birthday' | 'Nikah' | 'Wedding' | 'Corporate'>('all');
   const [highlightsSearchQuery, setHighlightsSearchQuery] = useState<string>('');
 
   const filteredHighlights = useMemo(() => {
@@ -578,6 +626,29 @@ export default function App() {
           style={{ backgroundColor: activeSwatchGlow }}
         />
         <div className="absolute opacity-20 blur-[130px] rounded-full w-[500px] h-[500px] -top-10 -right-20 bg-purple-royal" />
+      </div>
+
+      {/* RUNNING ANNOUNCEMENT BANNER */}
+      <div className="w-full bg-[#1e0524] border-b border-gold-dark/20 py-2.5 overflow-hidden relative z-50 select-none">
+        <div className="flex animate-marquee whitespace-nowrap gap-8">
+          <div className="flex items-center gap-8 shrink-0">
+            {Array(4).fill("This website is under construction. Please DM for your order on social media pages or WhatsApp").map((text, idx) => (
+              <span key={idx} className="flex items-center gap-3.5 font-sans uppercase font-semibold text-[10px] sm:text-[11px] tracking-widest text-gold-light">
+                <Sparkles className="w-3.5 h-3.5 text-gold-accent animate-pulse" />
+                <span>{text}</span>
+              </span>
+            ))}
+          </div>
+          {/* Duplicate for seamless infinite loop */}
+          <div className="flex items-center gap-8 shrink-0 font-medium" aria-hidden="true">
+            {Array(4).fill("This website is under construction. Please DM for your order on social media pages or WhatsApp").map((text, idx) => (
+              <span key={`dup-${idx}`} className="flex items-center gap-3.5 font-sans uppercase font-semibold text-[10px] sm:text-[11px] tracking-widest text-gold-light">
+                <Sparkles className="w-3.5 h-3.5 text-gold-accent animate-pulse" />
+                <span>{text}</span>
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* FIXED GLASS NAVIGATION HEADER */}
@@ -1175,7 +1246,7 @@ export default function App() {
 
         {/* Dynamic Category Filtering Tabs */}
         <div className="flex flex-wrap justify-center items-center gap-3 mb-16 max-w-3xl mx-auto">
-          {(['all', 'Birthday', 'Nikah', 'Wedding', 'Office decor'] as const).map(cat => (
+          {(['all', 'Birthday', 'Nikah', 'Wedding', 'Corporate'] as const).map(cat => (
             <button
               key={cat}
               onClick={() => setActiveHighlightCategory(cat)}
@@ -2062,10 +2133,10 @@ export default function App() {
                         {selectedHighlight.category === 'Birthday' && (
                           <span>A mesmerizing dual-focus setup where custom high-gloss lacquer finishes on frame installations produce majestic camera-ready sheens. Soft lavender wash uplighting creates premium atmospheric photography.</span>
                         )}
-                        {selectedHighlight.category === 'Office decor' && (
-                          <span>Perfect for high-density lobby entrances, public forums, or custom executive stages. Corporate branding color palettes or emblems can be integrated with backlighting arrays seamlessly.</span>
+                        {selectedHighlight.category === 'Corporate' && (
+                          <span>Perfect for high-density lobby entrances, public forums, or custom corporate and luxury events. Branding details, sufi stages, beachside spreads, or themes can be customized elegantly.</span>
                         )}
-                        {!['Wedding', 'Nikah', 'Birthday', 'Office decor'].includes(selectedHighlight.category) && (
+                        {!['Wedding', 'Nikah', 'Birthday', 'Corporate'].includes(selectedHighlight.category) && (
                           <span>Our curating specialists recommend coordinating your color swatches with premium silk overlays to balance atmospheric harmony. Customized configurations are fully tailored upon booking verification.</span>
                         )}
                       </div>

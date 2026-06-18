@@ -313,7 +313,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   }, []);
 
   // Operational states
-  const [activeTab, setActiveTab] = useState<'Directory' | 'Feedback' | 'Financial Ledger' | 'Notifications' | 'Change History' | 'Website Customizer'>('Directory');
+  const [activeTab, setActiveTab] = useState<'Directory' | 'Feedback' | 'Financial Ledger' | 'Notifications' | 'History' | 'Website Customizer'>('Directory');
   const [histTypeFilter, setHistTypeFilter] = useState<string>('All');
   const [histActionFilter, setHistActionFilter] = useState<string>('All');
   const [histSearch, setHistSearch] = useState<string>('');
@@ -433,7 +433,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [dynamicHighlights, setDynamicHighlights] = useState<any[]>(() => {
     const raw = localStorage.getItem('aura_dynamic_highlights');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed && parsed.length >= 8) return parsed;
+    if (parsed && parsed.length >= 12 && parsed.some(h => h.category === 'Corporate')) return parsed;
     const defaults = [
       {
         id: 'highlight-birthday-decor',
@@ -507,15 +507,56 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       },
       {
         id: 'highlight-office',
-        category: 'Office decor' as const,
+        category: 'Corporate' as const,
         title: 'Office Pakistan Independence Decor',
         subtitle: 'Corporate Emerald & White National Pride',
         description: 'Sophisticated company-wide festive styling for Pakistan Independence Day. Majestic green silk draperies matched beautifully with white orchids, brass elements, and creative crescent lighting.',
         image: '/images/aura_office_decor_1781397716019.jpg',
         features: ['Emerald Satin Drapes', 'White Orchid Arrangements', 'Crescent & Star Gold Motifs'],
         price: 150000
+      },
+      {
+        id: 'highlight-gala',
+        category: 'Corporate' as const,
+        title: 'Grand Corporate Gala Dinner',
+        subtitle: 'Prestigious Gala & Award Night Atmospheric Setup',
+        description: 'A spectacular high-end gala dinner featuring opulent banquet tables decorated with cascading plum floral centerpieces, gilded dinnerware, and customized architectural uplighting that reflects standard-setting corporate prestige.',
+        image: '/images/corporate_gala_1781799240061.jpg',
+        features: ['Cascading Plum Florals', 'Gilded Charger Settings', 'Architectural Ambient Uplighting'],
+        price: 600000
+      },
+      {
+        id: 'highlight-cruise',
+        category: 'Corporate' as const,
+        title: 'Luxury Yacht Cruise Dinner',
+        subtitle: 'Sunset Deck Banquets & Floating Soirees',
+        description: 'An exclusive oceanfront banquet on a luxury yacht. Features sparkling brass lantern arrays, premium white-and-gold tablescapes, and ambient sunset lights reflecting off Karachi\'s sparkling waves.',
+        image: '/images/cruise_dinner_1781799262512.jpg',
+        features: ['Sparkling Brass Lanterns', 'Premium White-and-Gold Linens', 'Sunset Ocean Deck Setups'],
+        price: 750000
+      },
+      {
+        id: 'highlight-qawwali',
+        category: 'Corporate' as const,
+        title: 'Atmospheric Qawwali Night',
+        subtitle: 'Sufi Musical Heritage & Festive Opulence',
+        description: 'A mystical and opulent musical setting, organized in royal plum carpeted floor spaces, velvet gavi cushions, hundreds of warm taper candles, and fresh rose installations for a soulful experience.',
+        image: '/images/qawwali_night_1781799286007.jpg',
+        features: ['Plush Velvet Floor Cushions', 'Warm Taper Candle Trails', 'Royal Silk Canopy Drapes'],
+        price: 500000
+      },
+      {
+        id: 'highlight-picnic',
+        category: 'Corporate' as const,
+        title: 'Elite Picnic with Sea Sports',
+        subtitle: 'Coastal Beach Escaping & Watersport Galas',
+        description: 'A luxury bohemian beachside escape. Features crisp white beach parasols, low organic wooden dining setups, handwoven cushions, fine crystal glasses, and high-octane watersport options like jet skiing.',
+        image: '/images/beach_sports_picnic_1781799307283.jpg',
+        features: ['Elegant White Boho Parasols', 'Low Coastal Dining Tables', 'Exhilarating Watersport Galas'],
+        price: 450000
       }
     ];
+    localStorage.setItem('aura_dynamic_highlights', JSON.stringify(defaults));
     return defaults;
   });
 
@@ -592,7 +633,11 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
       const rawHighlights = localStorage.getItem('aura_dynamic_highlights');
       const parsedHighlights = sanitizeStorageJson(rawHighlights);
-      if (parsedHighlights) setDynamicHighlights(parsedHighlights);
+      if (parsedHighlights) {
+        if (parsedHighlights.length >= 12 && parsedHighlights.some(h => h.category === 'Corporate')) {
+          setDynamicHighlights(parsedHighlights);
+        }
+      }
 
       const rawTestimonials = localStorage.getItem('aura_dynamic_testimonials');
       const parsedTestimonials = sanitizeStorageJson(rawTestimonials);
@@ -1511,13 +1556,32 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
+          {/* Bell Icon triggering Notifications on hover */}
+          <button 
+            type="button"
+            onMouseEnter={() => setActiveTab('Notifications')}
+            className={`p-2 sm:p-2.5 rounded-full text-xs flex items-center justify-center shadow-lg border transition-all duration-300 relative group ${
+              activeTab === 'Notifications'
+                ? 'bg-gold-accent text-plum-950 border-gold-accent shadow-gold-accent/25'
+                : 'bg-gold-accent/10 border-gold-accent/30 text-gold-accent hover:bg-gold-accent/20 hover:border-gold-accent hover:shadow-gold-accent/10'
+            }`}
+            title="Inquiries & Alerts"
+          >
+            <Bell className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'Notifications' ? 'text-plum-950' : 'text-gold-accent'}`} />
+            {unreadNotifCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white font-mono text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold animate-pulse leading-none border border-plum-950">
+                {unreadNotifCount}
+              </span>
+            )}
+          </button>
+
           <button 
             type="button"
             onClick={handleLogout}
-            className="bg-gold-accent/10 border border-gold-accent/30 text-gold-accent p-2 sm:p-2.5 rounded-full text-xs flex items-center justify-center shadow-lg"
+            className="bg-gold-accent/10 border border-gold-accent/30 text-gold-accent p-2 sm:p-2.5 rounded-full text-xs flex items-center justify-center shadow-lg hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 transition-all duration-300 font-bold"
             title="Lock Portal"
           >
-            <Power className="w-4.5 h-4.5 text-gold-accent" />
+            <Power className="w-4 h-4 text-gold-accent" />
           </button>
         </div>
       </header>
@@ -1525,29 +1589,34 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
       {/* ADMIN LEVEL SUB NAV */}
       <div className="bg-[#1b031f] border-b border-gold-dark/15 px-6 py-3 flex flex-wrap gap-4 items-center justify-between shrink-0">
         <div className="flex flex-wrap gap-2">
-          {(['Directory', 'Feedback', 'Financial Ledger', 'Notifications', 'Change History', 'Website Customizer'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-xs uppercase tracking-widest font-sans font-medium rounded transition duration-300 flex items-center gap-1.5 ${
-                activeTab === tab
-                  ? 'bg-gold-accent text-plum-950 shadow'
-                  : 'text-champagne-light hover:bg-plum-900/45'
-              }`}
-            >
-              {tab === 'Notifications' && <Bell className="w-3.5 h-3.5" />}
-              {tab === 'Website Customizer' && <Settings className="w-3.5 h-3.5" />}
-              {tab === 'Change History' && <History className="w-3.5 h-3.5" />}
-              {tab}
-              {tab === 'Notifications' && unreadNotifCount > 0 && (
-                <span className="bg-red-500 text-white font-mono text-[10px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold animate-pulse leading-none">
-                  {unreadNotifCount}
-                </span>
-              )}
-            </button>
-          ))}
+          {(['Directory', 'Feedback', 'Financial Ledger', 'History', 'Website Customizer'] as const).map((tab) => {
+            const getIcon = () => {
+              switch (tab) {
+                case 'Directory': return <Users className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />;
+                case 'Feedback': return <Star className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />;
+                case 'Financial Ledger': return <DollarSign className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />;
+                case 'History': return <History className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />;
+                case 'Website Customizer': return <Settings className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />;
+              }
+            };
+
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1.5 text-xs uppercase tracking-widest font-sans font-medium rounded transition duration-300 flex items-center gap-1.5 border group ${
+                  activeTab === tab
+                    ? 'bg-gold-accent text-plum-950 border-gold-accent shadow shadow-gold-accent/25'
+                    : 'text-champagne-light border-transparent hover:border-gold-accent/20 hover:bg-gold-accent/10 hover:text-gold-accent'
+                }`}
+              >
+                {getIcon()}
+                {tab}
+              </button>
+            );
+          })}
         </div>
-        <div className="text-xs text-champagne-light/50 font-serif italic">
+        <div className="text-xs text-[#ebd8b7cc] font-serif italic">
           Operational Center: DHA Karachi, Pakistan • Active Directory
         </div>
       </div>
@@ -1644,7 +1713,6 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20">
                 <div className="p-4 bg-plum-950 border-b border-gold-dark/15 flex justify-between items-center">
                   <span className="font-serif text-sm font-semibold text-gold-accent uppercase tracking-widest">Active Clientele Register</span>
-                  <span className="text-[10px] font-mono text-champagne-light/50">Total: {filteredCustomers.length} Records</span>
                 </div>
                 
                 {filteredCustomers.length === 0 && paginatedCustomers.length === 0 ? (
@@ -1730,8 +1798,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                         </thead>
                         <tbody className="divide-y divide-gold-accent/10 font-sans font-medium text-champagne-light/90">
                           {paginatedCustomers.map((c, idx) => (
-                            <tr key={c.id} className={`${idx % 2 === 0 ? 'bg-plum-950/40' : 'bg-plum-900/30'} hover:bg-plum-900/60 transition-colors`}>
-                              <td className="py-3.5 px-4 font-serif text-sm font-bold text-gold-light block-td">{c.fullName}</td>
+                            <tr key={c.id} className={`${idx % 2 === 0 ? 'bg-[#1e0524]/60' : 'bg-[#260a2d]/40'} hover:bg-gold-accent/[0.08] hover:shadow-[inset_4px_0_0_0_#d4af37] transition-all duration-300 group/record cursor-pointer`}>
+                              <td className="py-3.5 px-4 font-serif text-sm font-bold text-gold-light group-hover/record:text-gold-accent transition-colors duration-300 block-td">{c.fullName}</td>
                               <td className="py-3.5 px-4">
                                 <div className="space-y-0.5">
                                   <span className="block font-semibold text-white">{c.phone}</span>
@@ -1788,7 +1856,6 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20">
                 <div className="p-4 bg-plum-950 border-b border-gold-dark/15 flex justify-between items-center">
                   <span className="font-serif text-sm font-semibold text-gold-accent uppercase tracking-widest">Aura Partner Suppliers & Vendors</span>
-                  <span className="text-[10px] font-mono text-champagne-light/50">Total: {filteredVendors.length} Suppliers</span>
                 </div>
 
                 {filteredVendors.length === 0 && paginatedVendors.length === 0 ? (
@@ -1885,10 +1952,10 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                         </thead>
                         <tbody className="divide-y divide-gold-accent/10 font-sans font-medium text-champagne-light/90">
                           {paginatedVendors.map((v, idx) => (
-                            <tr key={v.id} className={`${idx % 2 === 0 ? 'bg-plum-950/40' : 'bg-plum-900/30'} hover:bg-plum-900/60 transition-colors`}>
+                            <tr key={v.id} className={`${idx % 2 === 0 ? 'bg-[#1e0524]/60' : 'bg-[#260a2d]/40'} hover:bg-gold-accent/[0.08] hover:shadow-[inset_4px_0_0_0_#d4af37] transition-all duration-300 group/record cursor-pointer`}>
                               <td className="py-3.5 px-4 font-sans">
                                 <div>
-                                  <span className="font-serif text-sm font-bold text-gold-light block">{v.companyName}</span>
+                                  <span className="font-serif text-sm font-bold text-gold-light group-hover/record:text-gold-accent transition-colors duration-300 block">{v.companyName}</span>
                                   <span className="inline-block text-[10px] px-2 py-0.5 mt-1 bg-gold-accent/10 text-gold-accent border border-gold-accent/20 rounded font-mono uppercase">{v.category}</span>
                                 </div>
                               </td>
@@ -1952,7 +2019,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
             {/* FEEDBACK FEED GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {paginatedFeedbacks.map(item => (
-                <div key={item.id} className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20 flex flex-col justify-between">
+                <div key={item.id} className="bg-[#1b031f]/95 text-white rounded-xl shadow-xl overflow-hidden border border-gold-dark/20 hover:border-gold-accent/45 hover:shadow-2xl hover:shadow-gold-accent/5 hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between group/feedback cursor-pointer">
                   {/* Card Main Info */}
                   <div className="p-6 space-y-4">
                     <div className="flex justify-between items-start">
@@ -2178,7 +2245,6 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       className="pl-8 pr-3 py-1 bg-plum-950 text-white placeholder-champagne-light/30 border border-gold-accent/20 rounded text-xs w-full focus:outline-none focus:border-gold-accent font-sans"
                     />
                   </div>
-                  <span className="text-[10px] font-mono text-champagne-light/50 whitespace-nowrap">Total Listings: {sortedAndFilteredLedger.length} Records</span>
                 </div>
               </div>
 
@@ -2270,7 +2336,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                       </thead>
                       <tbody className="divide-y divide-gold-accent/10 font-sans font-medium text-champagne-light/90">
                         {paginatedLedger.map((item, idx) => (
-                          <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-plum-950/40' : 'bg-plum-900/30'} hover:bg-plum-900/60 transition-colors`}>
+                          <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-[#1e0524]/60' : 'bg-[#260a2d]/40'} hover:bg-gold-accent/[0.08] hover:shadow-[inset_4px_0_0_0_#d4af37] transition-all duration-300 group/record cursor-pointer`}>
                             <td className="py-3.5 px-4 font-mono text-[11px] text-champagne-dark">{item.date}</td>
                             <td className="py-3.5 px-4 font-semibold text-white">{item.month}</td>
                             <td className="py-3.5 px-4">
@@ -2282,7 +2348,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                                 {item.category}
                               </span>
                             </td>
-                            <td className="py-3.5 px-4 block-td text-champagne-light/90">{item.description}</td>
+                            <td className="py-3.5 px-4 block-td text-champagne-light/90 group-hover/record:text-white transition-colors duration-300">{item.description}</td>
                             <td className={`py-3.5 px-4 text-right font-bold font-mono text-sm ${
                               item.type === 'Revenue' ? 'text-emerald-400' : 'text-rose-450'
                             }`}>
@@ -2343,10 +2409,10 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                 {notifications.map((item) => (
                   <div
                     key={item.id}
-                    className={`p-5 rounded-lg border transition duration-300 ${
+                    className={`p-5 rounded-lg border transition-all duration-300 cursor-pointer ${
                       item.read
-                        ? 'bg-[#1b031f]/45 border-gold-dark/10'
-                        : 'bg-[#2a0730]/75 border-gold-accent/30 shadow-lg'
+                        ? 'bg-[#1b031f]/45 border-gold-dark/10 hover:border-gold-accent/35 hover:bg-[#1b031f]/75 hover:shadow-lg'
+                        : 'bg-[#2a0730]/75 border-gold-accent/35 shadow-lg hover:border-gold-accent hover:bg-[#2a0730]/90 hover:shadow-xl'
                     }`}
                   >
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -2439,8 +2505,8 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
           </div>
         )}
 
-        {/* ----------------- TAB: CHANGE HISTORY & AUDIT TRAILS ----------------- */}
-        {activeTab === 'Change History' && (
+        {/* ----------------- TAB: HISTORY & AUDIT TRAILS ----------------- */}
+        {activeTab === 'History' && (
           <div className="space-y-6">
             <div className="bg-[#1b031f] border border-gold-dark/15 p-6 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
@@ -2573,7 +2639,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                     key={log.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-[#1b031f] border border-gold-dark/15 p-5 rounded-lg hover:border-gold-accent/25 transition duration-300 shadow-md flex flex-col md:flex-row gap-5 justify-between items-start"
+                    className="bg-[#1b031f] border border-gold-dark/15 p-5 rounded-lg hover:border-gold-accent/40 hover:bg-gold-accent/[0.04] hover:shadow-lg hover:shadow-gold-accent/5 transition-all duration-300 flex flex-col md:flex-row gap-5 justify-between items-start group/history cursor-pointer"
                   >
                     <div className="space-y-2 shrink-0 md:max-w-xs w-full md:w-auto">
                       <div className="flex items-center gap-2">
@@ -3105,7 +3171,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                                     <option value="Birthday">Birthday</option>
                                     <option value="Nikah">Nikah</option>
                                     <option value="Wedding">Wedding</option>
-                                    <option value="Office decor">Office decor</option>
+                                    <option value="Corporate">Corporate</option>
                                   </select>
                                 </div>
                                 <div>
