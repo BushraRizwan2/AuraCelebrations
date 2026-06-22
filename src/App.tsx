@@ -211,19 +211,20 @@ export default function App() {
   const [webConfig, setWebConfig] = useState(() => {
     const raw = localStorage.getItem('aura_web_config');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed) return parsed;
-    return {
-      colors: {
-        background_950: '#140514',
-        background_900: '#220a22',
-        background_800: '#351035',
-        gold_accent: '#d4af37',
-        gold_dark: '#aa8410',
-        gold_light: '#f6e6c2',
-        textColor: '#ffffff',
-        cardBackground: '#ffffff'
-      },
-      sections: [
+    if (parsed && parsed.colors && parsed.colors.background_950 !== '#140514') return parsed;
+    const defaultColors = {
+      background_950: '#050505',
+      background_900: '#121212',
+      background_800: '#1c1c1e',
+      gold_accent: '#d4af37',
+      gold_dark: '#aa8410',
+      gold_light: '#f6e6c2',
+      textColor: '#ffffff',
+      cardBackground: '#0d0d0d'
+    };
+    const migrated = {
+      colors: defaultColors,
+      sections: parsed?.sections || [
         { id: 'hero-section', name: 'Hero Curation Intro', enabled: true },
         { id: 'services-section', name: 'Dynamic Tailoring Services', enabled: true },
         { id: 'moodboard-section', name: 'Interactive Moodboard Generator', enabled: true },
@@ -232,14 +233,15 @@ export default function App() {
         { id: 'testimonials-section', name: 'Words of Patrons (Testimonials)', enabled: true },
         { id: 'inquiry-section', name: 'Grand Consultation Intake Forms', enabled: true }
       ],
-      hero: {
+      hero: parsed?.hero || {
         title: 'Aura Celebrations',
         subtitle: 'CHOREOGRAPHING ATMOSPHERIC MASTERPIECES',
         description: 'We craft hyper-exclusive, premium sensory landscapes for elite celebrations in Karachi, Pakistan. Balancing architectural density, pure velvet textiles, and raw flora sculpting.',
         image: '/images/celestique_reception_1781396299184.jpg'
-      },
-      customSections: []
+      }
     };
+    localStorage.setItem('aura_web_config', JSON.stringify(migrated));
+    return migrated;
   });
 
   const [dynamicServices, setDynamicServices] = useState<any[]>(() => {
@@ -379,7 +381,7 @@ export default function App() {
   const currentProposal = useMemo(() => getStyleProposal(selectedSeason, selectedVibe), [selectedSeason, selectedVibe]);
   
   // Custom theme backdrop color override based on selected style color
-  const [activeSwatchGlow, setActiveSwatchGlow] = useState<string>('#220a22');
+  const [activeSwatchGlow, setActiveSwatchGlow] = useState<string>('#121212');
 
   // Estimator Form state
   const [guestCount, setGuestCount] = useState<number>(100);
@@ -601,19 +603,19 @@ export default function App() {
       {/* Dynamic Style overrides for real-time Palette changes */}
       <style>{`
         :root {
-          --color-plum-950: ${webConfig.colors.background_950 || '#140514'};
-          --color-plum-900: ${webConfig.colors.background_900 || '#220a22'};
+          --color-plum-950: ${webConfig.colors.background_950 || '#050505'};
+          --color-plum-900: ${webConfig.colors.background_900 || '#121212'};
           --color-gold-accent: ${webConfig.colors.gold_accent || '#d4af37'};
           --color-gold-light: ${webConfig.colors.gold_light || '#f6e6c2'};
           --color-textColor: ${webConfig.colors.textColor || '#ffffff'};
         }
         body, .min-h-screen {
-          background-color: ${webConfig.colors.background_950 || '#140514'} !important;
+          background-color: ${webConfig.colors.background_950 || '#050505'} !important;
           color: ${webConfig.colors.textColor || '#ffffff'} !important;
         }
-        .bg-plum-950 { background-color: ${webConfig.colors.background_950 || '#140514'} !important; }
-        .bg-plum-900 { background-color: ${webConfig.colors.background_900 || '#220a22'} !important; }
-        .bg-plum-900\\/40 { background-color: ${webConfig.colors.background_900 || '#220a22'}66 !important; }
+        .bg-plum-950 { background-color: ${webConfig.colors.background_950 || '#050505'} !important; }
+        .bg-plum-900 { background-color: ${webConfig.colors.background_900 || '#121212'} !important; }
+        .bg-plum-900\\/40 { background-color: ${webConfig.colors.background_900 || '#121212'}66 !important; }
         .text-gold-accent { color: ${webConfig.colors.gold_accent || '#d4af37'} !important; }
         .border-gold-accent { border-color: ${webConfig.colors.gold_accent || '#d4af37'} !important; }
         .hover\\:bg-gold-accent:hover { background-color: ${webConfig.colors.gold_accent || '#d4af37'} !important; }
@@ -629,7 +631,7 @@ export default function App() {
       </div>
 
       {/* RUNNING ANNOUNCEMENT BANNER */}
-      <div className="w-full bg-[#1e0524] border-b border-gold-dark/20 py-2.5 overflow-hidden relative z-50 select-none">
+      <div className="w-full bg-[#0c0c0e] border-b border-gold-dark/20 py-2.5 overflow-hidden relative z-50 select-none">
         <div className="flex animate-marquee whitespace-nowrap gap-8">
           <div className="flex items-center gap-8 shrink-0">
             {Array(4).fill("This website is under construction. Please DM for your order on social media pages or WhatsApp").map((text, idx) => (
@@ -654,22 +656,18 @@ export default function App() {
       {/* FIXED GLASS NAVIGATION HEADER */}
       <header id="nav-header" className="sticky top-0 z-50 backdrop-blur-md bg-plum-950/80 border-b border-gold-dark/20 py-3 sm:py-4 px-3 sm:px-6 md:px-12 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            {/* Elegant Logo Image Frame */}
-            <div id="brand-logo-crest" className="relative group shrink-0">
+          <div className="flex items-center gap-4 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            {/* Elegant Logo Image Frame without circular truncation or redundant sidebar text */}
+            <div id="brand-logo-crest" className="relative group shrink-0 flex items-center pr-2">
               <img 
                 src={resolveImgUrl("/images/aura_logo_1781397175518.jpg")} 
                 alt="Aura Celebrations" 
-                className="w-10 h-10 rounded-full border border-gold-accent object-cover bg-plum-900/40 group-hover:scale-105 transition-transform duration-300"
+                className="h-16 sm:h-20 lg:h-24 w-auto object-contain rounded border border-gold-dark/15 group-hover:border-gold-accent/40 shadow-xl transition-all duration-500 bg-black/60"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute -top-1 -right-1">
+              <div className="absolute top-1 right-2">
                 <Sparkles className="w-3.5 h-3.5 text-gold-light animate-pulse" />
               </div>
-            </div>
-            <div>
-              <span className="font-serif text-[13px] min-[380px]:text-[15px] sm:text-lg md:text-2xl tracking-widest text-gold-accent block leading-none">{webConfig.hero.title.toUpperCase()}</span>
-              <span className="text-[8px] min-[380px]:text-[9px] tracking-[0.35em] text-champagne-dark font-sans block mt-1">EVENT MANAGEMENT</span>
             </div>
           </div>
 
@@ -1665,7 +1663,7 @@ export default function App() {
                           required
                           value={formData.fullName}
                           onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))}
-                          placeholder="Lady Genevieve Sterling"
+                          placeholder="Zainab Muzamil (or Ayesha & Bilal)"
                           className="w-full bg-champagne-light/50 border border-plum-950/10 rounded px-4 py-3 text-sm text-plum-950 placeholder-plum-950/40 focus:outline-none focus:border-gold-accent transition-colors"
                         />
                       </div>
@@ -1679,20 +1677,20 @@ export default function App() {
                           required
                           value={formData.email}
                           onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
-                          placeholder="genevieve@sterlingestates.com"
+                          placeholder="zainab.muzamil@outlook.pk"
                           className="w-full bg-champagne-light/50 border border-plum-950/10 rounded px-4 py-3 text-sm text-plum-950 placeholder-plum-950/40 focus:outline-none focus:border-gold-accent transition-colors"
                         />
                       </div>
 
                       {/* Phone input */}
                       <div className="space-y-1.5 text-left">
-                        <label htmlFor="phone" className="text-[10px] uppercase tracking-widest text-plum-900/60 font-mono block font-semibold">Contact Telephone</label>
+                        <label htmlFor="phone" className="text-[10px] uppercase tracking-widest text-plum-900/60 font-mono block font-semibold">Contact Telephone *</label>
                         <input 
                           type="tel" 
                           id="phone" 
                           value={formData.phone}
                           onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
-                          placeholder="+1 (212) 555-0199"
+                          placeholder="+92 (300) 123-4567"
                           className="w-full bg-champagne-light/50 border border-plum-950/10 rounded px-4 py-3 text-sm text-plum-950 placeholder-plum-950/40 focus:outline-none focus:border-gold-accent transition-colors"
                         />
                       </div>
@@ -1721,7 +1719,7 @@ export default function App() {
                           id="venueLocation" 
                           value={formData.venueLocation}
                           onChange={(e) => setFormData(p => ({ ...p, venueLocation: e.target.value }))}
-                          placeholder="Vanderbilt Mansion, NY or Private Estate"
+                          placeholder="DHA Golf Club / PC Karachi or Royal Palm Lahore"
                           className="w-full bg-champagne-light/50 border border-plum-950/10 rounded px-4 py-3 text-sm text-plum-950 placeholder-plum-950/40 focus:outline-none focus:border-gold-accent transition-colors"
                         />
                       </div>
@@ -1734,7 +1732,7 @@ export default function App() {
                           id="appliedProposal" 
                           value={formData.appliedProposal}
                           onChange={(e) => setFormData(p => ({ ...p, appliedProposal: e.target.value }))}
-                          placeholder="Choose style from Interactive Studio above"
+                          placeholder="e.g. Traditional Shehnai, Royal Shendi or Emerald Valima"
                           className="w-full bg-champagne-light/50 border border-plum-950/10 rounded px-4 py-3 text-sm text-plum-950 placeholder-plum-950/45 focus:outline-none focus:border-gold-accent transition-colors"
                         />
                       </div>
@@ -1749,7 +1747,7 @@ export default function App() {
                         rows={4}
                         value={formData.specialNotes}
                         onChange={(e) => setFormData(p => ({ ...p, specialNotes: e.target.value }))}
-                        placeholder="Detail any specifics regarding architectural layouts, candle safety constraints, custom flower species requested, or scale configurations..."
+                        placeholder="Detail any specifics regarding traditional jasmine (motia) carpets, marigold (genda) arches, custom brass katora lanterns, custom seating layouts, or specific staging dimensions..."
                         className="w-full bg-champagne-light/50 border border-plum-950/10 rounded px-4 py-3 text-sm text-plum-950 placeholder-plum-950/40 focus:outline-none focus:border-gold-accent transition-colors resize-y"
                       />
                     </div>
@@ -1905,19 +1903,13 @@ export default function App() {
           
           {/* Logo Column */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-gold-accent object-cover bg-plum-900/45 shrink-0 overflow-hidden">
-                <img 
-                  src={resolveImgUrl("/images/aura_logo_1781397175518.jpg")} 
-                  alt="Aura Celebrations" 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              <div>
-                <span className="font-serif text-xl tracking-widest text-gold-accent block leading-none">AURA CELEBRATIONS</span>
-                <span className="text-[10px] tracking-[0.3em] text-champagne-dark font-sans block">EVENT MANAGEMENT</span>
-              </div>
+            <div className="flex items-center">
+              <img 
+                src={resolveImgUrl("/images/aura_logo_1781397175518.jpg")} 
+                alt="Aura Celebrations" 
+                className="h-24 sm:h-28 lg:h-32 w-auto object-contain rounded border border-gold-dark/15 shadow-md bg-black/40"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <p className="text-xs text-champagne-light/50 leading-relaxed max-w-xs">
               Designing theatrical atmospheres and opulent table layouts that write a mesmerizing legacy for fine celebrations.

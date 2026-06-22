@@ -5,11 +5,11 @@
   --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
   
-  --color-plum-950: #140514;
-  --color-plum-900: #220a22;
-  --color-plum-800: #351035;
-  --color-purple-royal: #5e115e;
-  --color-purple-light: #8d2e8d;
+  --color-plum-950: #050505;
+  --color-plum-900: #121212;
+  --color-plum-800: #1c1c1e;
+  --color-purple-royal: #2a210b;
+  --color-purple-light: #e5c15a;
   
   --color-gold-light: #f6e6c2;
   --color-gold-accent: #d4af37;
@@ -91,8 +91,8 @@ select:focus {
 }
 
 select option {
-  background-color: var(--color-[#160519]) !important;
-  background-color: #160519 !important;
+  background-color: var(--color-plum-900) !important;
+  background-color: #121212 !important;
   color: var(--color-gold-light) !important;
   padding: 10px !important;
   font-size: 0.75rem !important;

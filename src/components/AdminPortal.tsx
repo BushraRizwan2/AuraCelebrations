@@ -345,18 +345,19 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
   const [webConfig, setWebConfig] = useState(() => {
     const raw = localStorage.getItem('aura_web_config');
     const parsed = sanitizeStorageJson(raw);
-    if (parsed) return parsed;
+    if (parsed && parsed.colors && parsed.colors.background_950 !== '#140514') return parsed;
+    const defaultColors = {
+      background_950: '#050505',
+      background_900: '#121212',
+      background_800: '#1c1c1e',
+      gold_accent: '#d4af37',
+      gold_dark: '#aa8410',
+      gold_light: '#f6e6c2',
+      textColor: '#ffffff',
+      cardBackground: '#0d0d0d'
+    };
     return {
-      colors: {
-        background_950: '#140514',
-        background_900: '#220a22',
-        background_800: '#351035',
-        gold_accent: '#d4af37',
-        gold_dark: '#aa8410',
-        gold_light: '#f6e6c2',
-        textColor: '#ffffff',
-        cardBackground: '#ffffff'
-      },
+      colors: defaultColors,
       sections: [
         { id: 'hero-section', name: 'Hero Curation Intro', enabled: true },
         { id: 'services-section', name: 'Dynamic Tailoring Services', enabled: true },
@@ -2115,7 +2116,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               {/* Gross Client Booking / Revenues */}
-              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
+              <div className="bg-[#0d0d0f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
                 <div className="absolute right-4 top-4 text-emerald-300 bg-emerald-500/10 w-10 h-10 rounded-full flex items-center justify-center border border-emerald-500/20">
                   <TrendingUp className="w-5 h-5 text-emerald-450" />
                 </div>
@@ -2125,7 +2126,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               </div>
 
               {/* Total combined expenses */}
-              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
+              <div className="bg-[#0d0d0f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
                 <div className="absolute right-4 top-4 text-rose-300 bg-rose-500/10 w-10 h-10 rounded-full flex items-center justify-center border border-rose-500/20">
                   <TrendingDown className="w-5 h-5 text-rose-450" />
                 </div>
@@ -2135,7 +2136,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
               </div>
 
               {/* Net profits or losses */}
-              <div className="bg-[#1b031f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
+              <div className="bg-[#0d0d0f]/95 text-white rounded-xl shadow-lg p-6 border border-gold-accent/20 relative overflow-hidden">
                 <div className="absolute right-4 top-4 text-gold-accent/20 bg-gold-accent/5 w-10 h-10 rounded-full flex items-center justify-center border border-gold-accent/30">
                   <Award className="w-5 h-5 text-gold-accent" />
                 </div>
@@ -2154,7 +2155,7 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
             </div>
 
             {/* DYNAMIC PROGRESS CASHFLOW METRIC PANEL */}
-            <div className="bg-[#1b031f]/95 text-white p-6 rounded-xl shadow-lg border border-gold-dark/20 space-y-4">
+            <div className="bg-[#0d0d0f]/95 text-white p-6 rounded-xl shadow-lg border border-gold-dark/20 space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                   <h3 className="font-serif text-base font-bold text-gold-accent">Visual Cashflow Margin Metre (FY {selectedYear})</h3>
@@ -2908,21 +2909,21 @@ export default function AdminPortal({ onClose }: AdminPortalProps) {
                           setWebConfig({
                             ...webConfig,
                             colors: {
-                              background_950: '#140514',
-                              background_900: '#220a22',
-                              background_800: '#351035',
+                              background_950: '#050505',
+                              background_900: '#121212',
+                              background_800: '#1c1c1e',
                               gold_accent: '#d4af37',
                               gold_dark: '#aa8410',
                               gold_light: '#f6e6c2',
                               textColor: '#ffffff',
-                              cardBackground: '#ffffff'
+                              cardBackground: '#0d0d0d'
                             }
                           });
                           setTimeout(triggerConfigUpdated, 100);
                         }}
                         className="bg-transparent border border-gold-dark/35 hover:border-gold-accent hover:text-white px-4 py-2 rounded text-xs uppercase tracking-widest font-mono text-champagne-light/70 transition"
                       >
-                        Reset Default Plum & Champagne
+                        Reset Luxury Black & Gold
                       </button>
                     </div>
                   </div>
